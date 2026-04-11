@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Planner Dashboard — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-dash">
+
+    <!-- Welcome banner -->
+    <div class="mh-dash-banner">
+        <div>
+            <p class="mh-dash-banner__title">
+                Welcome back, {{ current_user.full_name or current_user.email }} &#128075;
+            </p>
+            <p class="mh-dash-banner__sub">
+                Manage your work orders and track production progress.
+            </p>
+        </div>
+        <span class="mh-dash-banner__role">&#128203;&nbsp; Production Planner</span>
+    </div>
+
+    <!-- Stat cards — placeholders until work order US stories wire real queries -->
+    <div class="mh-stat-grid">
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#128203;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Pending Orders</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#128197;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Scheduled Orders</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#9654;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">In Progress</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#10003;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Completed Today</span>
+        </div>
+    </div>
+
+    <!-- Two-column section -->
+    <div class="mh-dash-grid mh-dash-grid--wide">
+
+        <!-- Quick actions -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">Quick actions</h2>
+            <ul class="mh-action-list">
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#43;</span>
+                        Create Work Order
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128197;</span>
+                        Schedule Production
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128230;</span>
+                        Check Material Stock
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128202;</span>
+                        View All Orders
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('profile.edit') }}">
+                        <span class="mh-action-list__icon">&#128100;</span>
+                        Edit My Profile
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Account summary -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">My account</h2>
+
+            <div style="text-align:center; padding:.75rem 0 1.25rem;">
+                <div style="
+          width:52px; height:52px; border-radius:50%;
+          background:var(--mh-primary);
+          display:inline-flex; align-items:center; justify-content:center;
+          font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:.6rem;">
+                    {{ (current_user.full_name or current_user.email)[0].upper() }}
+                </div>
+                <div style="font-weight:600; font-size:.95rem;">
+                    {{ current_user.full_name or '—' }}
+                </div>
+                <div style="font-size:.8rem; color:var(--mh-muted);">
+                    {{ current_user.email }}
+                </div>
+            </div>
+
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Role</span>
+                <span class="mh-info-row__value">
+                    <span class="mh-badge mh-badge--planner">Production Planner</span>
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Department</span>
+                <span class="mh-info-row__value">{{ current_user.department or '—' }}</span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Notifications</span>
+                <span class="mh-info-row__value">
+                    {% set pref = current_user.notification_preference.value %}
+                    {% if pref == 'EMAIL' %}
+                    <span class="mh-badge mh-badge--email">Email</span>
+                    {% elif pref == 'SMS' %}
+                    <span class="mh-badge mh-badge--sms">SMS</span>
+                    {% else %}
+                    <span class="mh-badge mh-badge--none">None</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Work orders placeholder — will be replaced when US-4 is built -->
+    <div class="mh-card">
+        <h2 class="mh-card__title">Recent work orders</h2>
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128203;</div>
+            <p class="mh-placeholder__text">
+                Your work orders will appear here once US-4 (Work Order Creation) is implemented.
+            </p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

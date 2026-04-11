@@ -15,9 +15,9 @@ US-2 acceptance criteria covered:
 
 import re
 
-from manufacturinghub.models.audit import AuditLog, AuditAction
-from manufacturinghub.models.base import db
-from manufacturinghub.models.user import User, NotificationPreference
+from models.audit import AuditLog, AuditAction
+from models.base import db
+from models.user import User, NotificationPreference
 
 
 # ------------------------------------------------------------------ #
@@ -39,7 +39,7 @@ def dashboard_url_for_role(user: User) -> str:
     Returns the Flask url endpoint name for the user's role.
     Used after profile completion to redirect to the correct dashboard.
     """
-    from manufacturinghub.models.user import UserRole
+    from models.user import UserRole
     if user.role == UserRole.MANAGER:
         return "dashboard.manager"
     return "dashboard.planner"

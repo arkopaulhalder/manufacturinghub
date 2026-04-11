@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 
 from .base import db
 
-
 class AuditAction(enum.Enum):
     USER_LOGIN = "USER_LOGIN"
     USER_PROFILE_UPDATE = "USER_PROFILE_UPDATE"

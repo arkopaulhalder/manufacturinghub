@@ -15,6 +15,7 @@ import models.inventory
 import models.machine
 import models.maintenance
 import models.work_order
+import models.material
 
 app = create_app()
 

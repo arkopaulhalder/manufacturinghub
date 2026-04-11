@@ -1,0 +1,884 @@
+/* ============================================================
+   ManufacturingHub — Global Design System
+   Used by US-1 (Auth) and US-2 (Profile) pages
+   ============================================================ */
+
+/* ---- Tokens ------------------------------------------------ */
+:root {
+    --mh-primary: #1a56db;
+    --mh-primary-dark: #1341b0;
+    --mh-primary-light: #e8effc;
+    --mh-surface: #ffffff;
+    --mh-page-bg: #f0f2f5;
+    --mh-border: #dee2e6;
+    --mh-text: #1a1d23;
+    --mh-muted: #6c757d;
+    --mh-success: #198754;
+    --mh-danger: #dc3545;
+    --mh-radius: 10px;
+    --mh-radius-sm: 6px;
+    --mh-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+    --mh-shadow-lg: 0 8px 32px rgba(0, 0, 0, .12);
+}
+
+/* ---- Base -------------------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--mh-page-bg);
+    color: var(--mh-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+a {
+    color: var(--mh-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: var(--mh-primary-dark);
+}
+
+/* ---- Navbar ------------------------------------------------ */
+.mh-navbar {
+    background: var(--mh-text);
+    padding: 0 1.5rem;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.mh-navbar__brand {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mh-navbar__brand:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+.mh-navbar__brand-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--mh-primary);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #fff;
+}
+
+.mh-navbar__links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.mh-navbar__links a {
+    color: rgba(255, 255, 255, .75);
+    padding: 6px 12px;
+    border-radius: var(--mh-radius-sm);
+    font-size: .875rem;
+    transition: background .15s, color .15s;
+}
+
+.mh-navbar__links a:hover {
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    text-decoration: none;
+}
+
+.mh-navbar__links .active>a {
+    color: #fff;
+    background: rgba(255, 255, 255, .1);
+}
+
+.mh-navbar__user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, .85);
+    font-size: .875rem;
+}
+
+.mh-navbar__avatar {
+    width: 30px;
+    height: 30px;
+    background: var(--mh-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* ---- Flash alerts ------------------------------------------ */
+.mh-alerts {
+    max-width: 520px;
+    margin: 1.25rem auto 0;
+    padding: 0 1rem;
+}
+
+.mh-alert {
+    padding: .75rem 1rem;
+    border-radius: var(--mh-radius-sm);
+    font-size: .875rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    margin-bottom: .5rem;
+    border: 1px solid transparent;
+}
+
+.mh-alert--success {
+    background: #d1e7dd;
+    border-color: #a3cfbb;
+    color: #0a3622;
+}
+
+.mh-alert--danger {
+    background: #f8d7da;
+    border-color: #f1aeb5;
+    color: #58151c;
+}
+
+.mh-alert--info {
+    background: #cff4fc;
+    border-color: #9eeaf9;
+    color: #055160;
+}
+
+.mh-alert--warning {
+    background: #fff3cd;
+    border-color: #ffe69c;
+    color: #664d03;
+}
+
+.mh-alert__close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: .6;
+}
+
+.mh-alert__close:hover {
+    opacity: 1;
+}
+
+/* ---- Auth layout ------------------------------------------- */
+/* Centred single-card layout used by login / register / forgot / reset */
+.mh-auth-wrap {
+    min-height: calc(100vh - 58px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.mh-auth-card {
+    background: var(--mh-surface);
+    border-radius: var(--mh-radius);
+    box-shadow: var(--mh-shadow-lg);
+    width: 100%;
+    max-width: 440px;
+    padding: 2.25rem 2.5rem;
+}
+
+.mh-auth-card__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.mh-auth-card__logo-box {
+    width: 44px;
+    height: 44px;
+    background: var(--mh-primary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #fff;
+}
+
+.mh-auth-card__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 .35rem;
+    color: var(--mh-text);
+}
+
+.mh-auth-card__sub {
+    text-align: center;
+    color: var(--mh-muted);
+    font-size: .875rem;
+    margin-bottom: 1.75rem;
+}
+
+.mh-auth-card__footer {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: .875rem;
+    color: var(--mh-muted);
+}
+
+.mh-auth-card__footer a {
+    font-weight: 500;
+}
+
+.mh-auth-divider {
+    border: none;
+    border-top: 1px solid var(--mh-border);
+    margin: 1.5rem 0 1.25rem;
+}
+
+/* ---- Form controls ----------------------------------------- */
+.mh-form-group {
+    margin-bottom: 1.1rem;
+}
+
+.mh-label {
+    display: block;
+    font-weight: 500;
+    font-size: .875rem;
+    color: var(--mh-text);
+    margin-bottom: .4rem;
+}
+
+.mh-label--optional::after {
+    content: ' (optional)';
+    font-weight: 400;
+    color: var(--mh-muted);
+    font-size: .8rem;
+}
+
+.mh-input,
+.mh-select {
+    display: block;
+    width: 100%;
+    padding: .55rem .85rem;
+    font-size: .9375rem;
+    color: var(--mh-text);
+    background: #fff;
+    border: 1.5px solid var(--mh-border);
+    border-radius: var(--mh-radius-sm);
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+    appearance: none;
+}
+
+.mh-input:focus,
+.mh-select:focus {
+    border-color: var(--mh-primary);
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, .15);
+}
+
+.mh-input.is-invalid,
+.mh-select.is-invalid {
+    border-color: var(--mh-danger);
+}
+
+.mh-input.is-invalid:focus,
+.mh-select.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);
+}
+
+/* native select arrow */
+.mh-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236c757d' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .85rem center;
+    padding-right: 2.25rem;
+}
+
+.mh-field-hint {
+    font-size: .8rem;
+    color: var(--mh-muted);
+    margin-top: .3rem;
+}
+
+.mh-field-error {
+    font-size: .8rem;
+    color: var(--mh-danger);
+    margin-top: .3rem;
+}
+
+/* password wrapper — show/hide toggle */
+.mh-pw-wrap {
+    position: relative;
+}
+
+.mh-pw-wrap .mh-input {
+    padding-right: 2.75rem;
+}
+
+.mh-pw-toggle {
+    position: absolute;
+    right: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--mh-muted);
+    cursor: pointer;
+    font-size: .9rem;
+    line-height: 1;
+}
+
+.mh-pw-toggle:hover {
+    color: var(--mh-text);
+}
+
+/* ---- Password strength bar --------------------------------- */
+.mh-pw-strength {
+    margin-top: .5rem;
+}
+
+.mh-pw-strength__bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--mh-border);
+    overflow: hidden;
+}
+
+.mh-pw-strength__fill {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    transition: width .3s, background .3s;
+}
+
+.mh-pw-strength__label {
+    font-size: .75rem;
+    margin-top: .25rem;
+    color: var(--mh-muted);
+}
+
+/* ---- Buttons ----------------------------------------------- */
+.mh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: .6rem 1.2rem;
+    font-size: .9375rem;
+    font-weight: 500;
+    border-radius: var(--mh-radius-sm);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, box-shadow .15s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.mh-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.mh-btn--primary {
+    background: var(--mh-primary);
+    color: #fff;
+    border-color: var(--mh-primary);
+}
+
+.mh-btn--primary:hover:not(:disabled) {
+    background: var(--mh-primary-dark);
+    border-color: var(--mh-primary-dark);
+    color: #fff;
+    text-decoration: none;
+}
+
+.mh-btn--outline {
+    background: transparent;
+    color: var(--mh-primary);
+    border-color: var(--mh-primary);
+}
+
+.mh-btn--outline:hover:not(:disabled) {
+    background: var(--mh-primary-light);
+    text-decoration: none;
+}
+
+.mh-btn--ghost {
+    background: transparent;
+    color: var(--mh-muted);
+    border-color: var(--mh-border);
+}
+
+.mh-btn--ghost:hover:not(:disabled) {
+    background: var(--mh-page-bg);
+    color: var(--mh-text);
+    text-decoration: none;
+}
+
+.mh-btn--full {
+    width: 100%;
+}
+
+/* ---- Role selector cards (register page) ------------------- */
+.mh-role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.mh-role-card {
+    border: 1.5px solid var(--mh-border);
+    border-radius: var(--mh-radius-sm);
+    padding: .85rem .75rem;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    text-align: center;
+    user-select: none;
+}
+
+.mh-role-card:hover {
+    border-color: var(--mh-primary);
+    background: var(--mh-primary-light);
+}
+
+.mh-role-card input[type="radio"] {
+    display: none;
+}
+
+.mh-role-card--active {
+    border-color: var(--mh-primary);
+    background: var(--mh-primary-light);
+}
+
+.mh-role-card__icon {
+    font-size: 1.5rem;
+    margin-bottom: .3rem;
+}
+
+.mh-role-card__title {
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--mh-text);
+}
+
+.mh-role-card__desc {
+    font-size: .75rem;
+    color: var(--mh-muted);
+    margin-top: .15rem;
+}
+
+/* ---- Profile page layout ----------------------------------- */
+.mh-page {
+    max-width: 860px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.mh-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.mh-page-header__title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.mh-page-header__sub {
+    font-size: .875rem;
+    color: var(--mh-muted);
+    margin: .2rem 0 0;
+}
+
+.mh-card {
+    background: var(--mh-surface);
+    border-radius: var(--mh-radius);
+    box-shadow: var(--mh-shadow);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.25rem;
+}
+
+.mh-card__title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1.25rem;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--mh-border);
+    color: var(--mh-text);
+}
+
+/* ---- Profile view table ------------------------------------ */
+.mh-profile-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mh-profile-table tr {
+    border-bottom: 1px solid var(--mh-border);
+}
+
+.mh-profile-table tr:last-child {
+    border-bottom: none;
+}
+
+.mh-profile-table th {
+    width: 38%;
+    padding: .75rem 0;
+    font-weight: 500;
+    font-size: .875rem;
+    color: var(--mh-muted);
+    text-align: left;
+    vertical-align: top;
+}
+
+.mh-profile-table td {
+    padding: .75rem 0;
+    font-size: .9375rem;
+    color: var(--mh-text);
+    vertical-align: top;
+}
+
+/* ---- Badges ----------------------------------------------- */
+.mh-badge {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.mh-badge--manager {
+    background: #fde8d8;
+    color: #7c3400;
+}
+
+.mh-badge--planner {
+    background: #dbeafe;
+    color: #1341b0;
+}
+
+.mh-badge--email {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.mh-badge--sms {
+    background: #ede9fe;
+    color: #4c1d95;
+}
+
+.mh-badge--none {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* ---- Profile edit two-column grid -------------------------- */
+.mh-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.25rem;
+}
+
+.mh-form-grid .mh-form-group--full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 540px) {
+    .mh-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mh-auth-card {
+        padding: 1.75rem 1.25rem;
+    }
+
+    .mh-role-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- Divider text (OR) ------------------------------------ */
+.mh-or {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    color: var(--mh-muted);
+    font-size: .8rem;
+    margin: 1.1rem 0;
+}
+
+.mh-or::before,
+.mh-or::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--mh-border);
+}
+
+/* ---- Spinner on submit ------------------------------------ */
+@keyframes mh-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.mh-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, .35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: mh-spin .65s linear infinite;
+    display: none;
+}
+
+.mh-btn--loading .mh-spinner {
+    display: block;
+}
+
+.mh-btn--loading .mh-btn-text {
+    display: none;
+}
+
+/* ---- Dashboard layout ------------------------------------- */
+.mh-dash {
+    max-width: 1080px;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+}
+
+/* Welcome banner */
+.mh-dash-banner {
+    background: linear-gradient(135deg, var(--mh-primary) 0%, var(--mh-primary-dark) 100%);
+    border-radius: var(--mh-radius);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.mh-dash-banner__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 .25rem;
+}
+
+.mh-dash-banner__sub {
+    font-size: .875rem;
+    opacity: .85;
+    margin: 0;
+}
+
+.mh-dash-banner__role {
+    background: rgba(255, 255, 255, .2);
+    border-radius: 20px;
+    padding: .3rem .9rem;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .3px;
+    white-space: nowrap;
+}
+
+/* Stat cards row */
+.mh-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.mh-stat {
+    background: var(--mh-surface);
+    border-radius: var(--mh-radius);
+    box-shadow: var(--mh-shadow);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+
+.mh-stat__icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    margin-bottom: .1rem;
+}
+
+.mh-stat__value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--mh-text);
+    line-height: 1;
+}
+
+.mh-stat__label {
+    font-size: .8rem;
+    color: var(--mh-muted);
+    font-weight: 500;
+}
+
+/* Two-column section grid */
+.mh-dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.mh-dash-grid--wide {
+    grid-template-columns: 2fr 1fr;
+}
+
+@media (max-width: 700px) {
+
+    .mh-dash-grid,
+    .mh-dash-grid--wide {
+        grid-template-columns: 1fr;
+    }
+
+    .mh-stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Quick-action list in dashboard cards */
+.mh-action-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.mh-action-list a {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .7rem .9rem;
+    border-radius: var(--mh-radius-sm);
+    border: 1.5px solid var(--mh-border);
+    color: var(--mh-text);
+    font-size: .9rem;
+    font-weight: 500;
+    transition: border-color .15s, background .15s;
+    text-decoration: none;
+}
+
+.mh-action-list a:hover {
+    border-color: var(--mh-primary);
+    background: var(--mh-primary-light);
+    color: var(--mh-primary);
+    text-decoration: none;
+}
+
+.mh-action-list__icon {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mh-action-list__arrow {
+    margin-left: auto;
+    color: var(--mh-muted);
+    font-size: .8rem;
+}
+
+/* Info row inside a card — label + value pairs */
+.mh-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .55rem 0;
+    border-bottom: 1px solid var(--mh-border);
+    font-size: .9rem;
+}
+
+.mh-info-row:last-child {
+    border-bottom: none;
+}
+
+.mh-info-row__label {
+    color: var(--mh-muted);
+    font-weight: 500;
+}
+
+.mh-info-row__value {
+    color: var(--mh-text);
+    font-weight: 500;
+}
+
+/* Status dot */
+.mh-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: .4rem;
+    vertical-align: middle;
+}
+
+.mh-dot--active {
+    background: #198754;
+}
+
+.mh-dot--pending {
+    background: #ffc107;
+}
+
+.mh-dot--inactive {
+    background: #adb5bd;
+}
+
+/* Coming-soon placeholder inside a card */
+.mh-placeholder {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--mh-muted);
+}
+
+.mh-placeholder__icon {
+    font-size: 2rem;
+    margin-bottom: .5rem;
+}
+
+.mh-placeholder__text {
+    font-size: .875rem;
+}

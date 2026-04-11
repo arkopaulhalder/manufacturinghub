@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}My Profile — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">My Profile</h1>
+            <p class="mh-page-header__sub">Your account information and notification preferences</p>
+        </div>
+        <a href="{{ url_for('profile.edit') }}" class="mh-btn mh-btn--outline">
+            &#9998;&nbsp; Edit Profile
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <h2 class="mh-card__title">Account details</h2>
+
+        <!-- Avatar + name header -->
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.75rem;">
+            <div style="
+        width:56px; height:56px; border-radius:50%;
+        background:var(--mh-primary);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.35rem; font-weight:700; color:#fff; flex-shrink:0;">
+                {{ (user.full_name or user.email)[0].upper() }}
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; font-size:1.05rem; color:var(--mh-text);">
+                    {{ user.full_name or '—' }}
+                </div>
+                <div
+                    style="font-size:.875rem; color:var(--mh-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    {{ user.email }}
+                </div>
+            </div>
+            {% if user.role.value == 'MANAGER' %}
+            <span class="mh-badge mh-badge--manager">Plant Manager</span>
+            {% else %}
+            <span class="mh-badge mh-badge--planner">Production Planner</span>
+            {% endif %}
+        </div>
+
+        <!-- Detail rows -->
+        <table class="mh-profile-table">
+            <tbody>
+                <tr>
+                    <th>Department</th>
+                    <td>{{ user.department or '—' }}</td>
+                </tr>
+                <tr>
+                    <th>Phone</th>
+                    <td>{{ user.phone or '—' }}</td>
+                </tr>
+                <tr>
+                    <th>Notifications</th>
+                    <td>
+                        {% set pref = user.notification_preference.value %}
+                        {% if pref == 'EMAIL' %}
+                        <span class="mh-badge mh-badge--email">Email</span>
+                        {% elif pref == 'SMS' %}
+                        <span class="mh-badge mh-badge--sms">SMS</span>
+                        {% else %}
+                        <span class="mh-badge mh-badge--none">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Member since</th>
+                    <td>{{ user.created_at.strftime('%d %b %Y') }}</td>
+                </tr>
+                <tr>
+                    <th>Last updated</th>
+                    <td>{{ user.updated_at.strftime('%d %b %Y, %H:%M') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Back to dashboard link -->
+    <div style="margin-top:.5rem;">
+        <a href="{{ url_for('dashboard.index') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back to Dashboard
+        </a>
+    </div>
+
+</div>
+{% endblock %}

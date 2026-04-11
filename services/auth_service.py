@@ -17,13 +17,13 @@ US-1 acceptance criteria covered:
 
 import re
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from flask import current_app
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from manufacturinghub.models.base import db
-from manufacturinghub.models.user import User, UserRole
+from models.base import db
+from models.user import User, UserRole
 
 
 # ------------------------------------------------------------------ #
@@ -31,7 +31,7 @@ from manufacturinghub.models.user import User, UserRole
 # ------------------------------------------------------------------ #
 
 def _now():
-    return datetime.now(timezone.utc)
+    return datetime.utcnow()
 
 
 def _is_valid_email(email: str) -> bool:
@@ -40,7 +40,7 @@ def _is_valid_email(email: str) -> bool:
 
 
 def _is_valid_password(password: str) -> bool:
-    """min 8 chars, at least 1 uppercase letter, at least 1 digit — per SRS."""
+    """min 8 chars, at least 1 uppercase letter, at least 1 digit """
     if len(password) < 8:
         return False
     if not any(c.isupper() for c in password):

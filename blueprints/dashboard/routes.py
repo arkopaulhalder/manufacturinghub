@@ -1,14 +1,22 @@
-from flask import Blueprint, render_template
-from flask_login import login_required
+from flask import render_template, redirect, url_for
+from flask_login import login_required, current_user
+from models import UserRole
 
-dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
+from . import dashboard_bp
 
-@dashboard_bp.route('/')
+@dashboard_bp.route("/")
 @login_required
 def index():
-    return render_template('dashboard/manager.html', title='Dashboard')
+    if current_user.role == UserRole.MANAGER:
+        return redirect(url_for("dashboard.manager"))
+    return redirect(url_for("dashboard.planner"))
 
 @dashboard_bp.route('/manager')
 @login_required
 def manager():
     return render_template('dashboard/manager.html', title='Manager Dashboard')
+
+@dashboard_bp.route("/planner")
+@login_required
+def planner():
+    return render_template("dashboard/planner.html")

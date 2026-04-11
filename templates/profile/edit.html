@@ -1,50 +1,98 @@
 {% extends "base.html" %}
+{% block title %}Edit Profile — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0">Edit Profile</h4>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small">Please complete your profile to access the manufacturing portal.</p>
-                <form action="" method="post" novalidate>
-                    {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.full_name.label(class="form-label") }}
-                        {{ form.full_name(class="form-control") }}
-                        {% for error in form.full_name.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.department.label(class="form-label") }}
-                        {{ form.department(class="form-control") }}
-                        {% for error in form.department.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.phone.label(class="form-label") }}
-                        {{ form.phone(class="form-control", placeholder="10-digit format") }}
-                        {% for error in form.phone.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.notification_preference.label(class="form-label") }}
-                        {{ form.notification_preference(class="form-select") }}
-                        {% for error in form.notification_preference.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="d-grid">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                </form>
-            </div>
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Edit Profile</h1>
+            <p class="mh-page-header__sub">Update your details and notification preferences</p>
         </div>
     </div>
+
+    <div class="mh-card">
+        <h2 class="mh-card__title">Personal information</h2>
+
+        <form method="POST" novalidate id="profile-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-grid">
+
+                <!-- Full name -->
+                <div class="mh-form-group mh-form-group--full">
+                    {{ form.full_name.label(class="mh-label") }}
+                    {{ form.full_name(
+                    class="mh-input" + (" is-invalid" if form.full_name.errors else ""),
+                    placeholder="e.g. John Smith"
+                    ) }}
+                    {% for error in form.full_name.errors %}
+                    <p class="mh-field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Department -->
+                <div class="mh-form-group">
+                    <label class="mh-label mh-label--optional" for="{{ form.department.id }}">Department</label>
+                    {{ form.department(
+                    class="mh-input" + (" is-invalid" if form.department.errors else ""),
+                    placeholder="e.g. Production"
+                    ) }}
+                    <p class="mh-field-hint">Letters, numbers and spaces only.</p>
+                    {% for error in form.department.errors %}
+                    <p class="mh-field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Phone -->
+                <div class="mh-form-group">
+                    <label class="mh-label mh-label--optional" for="{{ form.phone.id }}">Phone</label>
+                    {{ form.phone(
+                    class="mh-input" + (" is-invalid" if form.phone.errors else ""),
+                    placeholder="10-digit number",
+                    maxlength="10",
+                    inputmode="numeric"
+                    ) }}
+                    {% for error in form.phone.errors %}
+                    <p class="mh-field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Notification preference -->
+                <div class="mh-form-group mh-form-group--full">
+                    {{ form.notification_preference.label(class="mh-label") }}
+                    {{ form.notification_preference(
+                    class="mh-select" + (" is-invalid" if form.notification_preference.errors else "")
+                    ) }}
+                    <p class="mh-field-hint">Controls how you receive low-stock and maintenance alerts.</p>
+                    {% for error in form.notification_preference.errors %}
+                    <p class="mh-field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex; gap:.75rem; margin-top:.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="profile-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">Save changes</span>
+                </button>
+                <a href="{{ url_for('profile.view') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('profile-form').addEventListener('submit', function () {
+        const btn = document.getElementById('profile-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}

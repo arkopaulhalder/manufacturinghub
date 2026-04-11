@@ -1,53 +1,161 @@
 {% extends "base.html" %}
+{% block title %}Register — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Register</h4>
+<div class="mh-auth-wrap">
+    <div class="mh-auth-card" style="max-width:480px;">
+
+        <div class="mh-auth-card__logo">
+            <div class="mh-auth-card__logo-box">&#9881;</div>
+        </div>
+        <h1 class="mh-auth-card__title">Create your account</h1>
+        <p class="mh-auth-card__sub">Join ManufacturingHub to manage production planning</p>
+
+        <form method="POST" novalidate id="reg-form">
+            {{ form.hidden_tag() }}
+
+            <!-- Email -->
+            <div class="mh-form-group">
+                {{ form.email.label(class="mh-label") }}
+                {{ form.email(
+                class="mh-input" + (" is-invalid" if form.email.errors else ""),
+                placeholder="you@company.com",
+                autocomplete="email"
+                ) }}
+                {% for error in form.email.errors %}
+                <p class="mh-field-error">{{ error }}</p>
+                {% endfor %}
             </div>
-            <div class="card-body">
-                <form action="" method="post" novalidate>
-                    {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
-                        {% for error in form.email.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
-                        {% for error in form.password.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control") }}
-                        {% for error in form.confirm_password.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.role.label(class="form-label") }}
-                        {{ form.role(class="form-select") }}
-                        {% for error in form.role.errors %}
-                        <span class="text-danger small">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="d-grid">
-                        {{ form.submit(class="btn btn-success") }}
-                    </div>
-                </form>
-                <hr>
-                <div class="text-center">
-                    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
+
+            <!-- Role selector -->
+            <div class="mh-form-group">
+                <span class="mh-label">Select your role</span>
+                {% if form.role.errors %}
+                {% for error in form.role.errors %}
+                <p class="mh-field-error">{{ error }}</p>
+                {% endfor %}
+                {% endif %}
+                <div class="mh-role-grid" id="role-grid">
+                    <label class="mh-role-card {% if form.role.data == 'PLANNER' %}mh-role-card--active{% endif %}"
+                        id="card-planner">
+                        <input type="radio" name="{{ form.role.name }}" value="PLANNER" {% if form.role.data=='PLANNER'
+                            %}checked{% endif %}>
+                        <div class="mh-role-card__icon">&#128203;</div>
+                        <div class="mh-role-card__title">Production Planner</div>
+                        <div class="mh-role-card__desc">Create &amp; schedule work orders</div>
+                    </label>
+                    <label class="mh-role-card {% if form.role.data == 'MANAGER' %}mh-role-card--active{% endif %}"
+                        id="card-manager">
+                        <input type="radio" name="{{ form.role.name }}" value="MANAGER" {% if form.role.data=='MANAGER'
+                            %}checked{% endif %}>
+                        <div class="mh-role-card__icon">&#128196;</div>
+                        <div class="mh-role-card__title">Plant Manager</div>
+                        <div class="mh-role-card__desc">Manage machines, inventory &amp; analytics</div>
+                    </label>
                 </div>
             </div>
-        </div>
+
+            <!-- Password -->
+            <div class="mh-form-group">
+                {{ form.password.label(class="mh-label") }}
+                <div class="mh-pw-wrap">
+                    {{ form.password(
+                    class="mh-input" + (" is-invalid" if form.password.errors else ""),
+                    id="pw-reg",
+                    autocomplete="new-password",
+                    oninput="updateStrength(this.value)"
+                    ) }}
+                    <button type="button" class="mh-pw-toggle" onclick="togglePw('pw-reg', this)">&#128065;</button>
+                </div>
+                <div class="mh-pw-strength">
+                    <div class="mh-pw-strength__bar">
+                        <div class="mh-pw-strength__fill" id="pw-bar"></div>
+                    </div>
+                    <p class="mh-pw-strength__label" id="pw-label">Min 8 chars · 1 uppercase · 1 digit</p>
+                </div>
+                {% for error in form.password.errors %}
+                <p class="mh-field-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Confirm password -->
+            <div class="mh-form-group">
+                {{ form.confirm_password.label(class="mh-label") }}
+                <div class="mh-pw-wrap">
+                    {{ form.confirm_password(
+                    class="mh-input" + (" is-invalid" if form.confirm_password.errors else ""),
+                    id="pw-confirm",
+                    autocomplete="new-password"
+                    ) }}
+                    <button type="button" class="mh-pw-toggle" onclick="togglePw('pw-confirm', this)">&#128065;</button>
+                </div>
+                {% for error in form.confirm_password.errors %}
+                <p class="mh-field-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="mh-btn mh-btn--primary mh-btn--full" id="reg-submit">
+                <span class="mh-spinner"></span>
+                <span class="mh-btn-text">Create account</span>
+            </button>
+        </form>
+
+        <hr class="mh-auth-divider">
+        <p class="mh-auth-card__footer">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+        </p>
+
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    /* Role card toggling */
+    document.querySelectorAll('.mh-role-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+            document.querySelectorAll('.mh-role-card').forEach(function (c) {
+                c.classList.remove('mh-role-card--active');
+            });
+            this.classList.add('mh-role-card--active');
+        });
+    });
+
+    /* Show/hide password */
+    function togglePw(id, btn) {
+        const el = document.getElementById(id);
+        el.type = el.type === 'password' ? 'text' : 'password';
+        btn.textContent = el.type === 'password' ? '👁' : '🙈';
+    }
+
+    /* Password strength */
+    function updateStrength(val) {
+        const bar = document.getElementById('pw-bar');
+        const label = document.getElementById('pw-label');
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/\d/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const levels = [
+            { w: '0%', bg: 'transparent', txt: 'Min 8 chars · 1 uppercase · 1 digit' },
+            { w: '25%', bg: '#dc3545', txt: 'Weak' },
+            { w: '50%', bg: '#fd7e14', txt: 'Fair' },
+            { w: '75%', bg: '#ffc107', txt: 'Good' },
+            { w: '100%', bg: '#198754', txt: 'Strong' },
+        ];
+        const lvl = levels[score];
+        bar.style.width = lvl.w;
+        bar.style.background = lvl.bg;
+        label.textContent = lvl.txt;
+    }
+
+    /* Loading state on submit */
+    document.getElementById('reg-form').addEventListener('submit', function () {
+        const btn = document.getElementById('reg-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}

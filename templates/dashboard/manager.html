@@ -1,13 +1,148 @@
 {% extends "base.html" %}
+{% block title %}Manager Dashboard — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="display-4">Welcome to ManufacturingHub</h1>
-        <p class="lead">You are logged in as a <strong>{{ current_user.role }}</strong>.</p>
-        <div class="alert alert-warning">
-            This is a placeholder for the Dashboard graphs and metrics.
+<div class="mh-dash">
+
+    <!-- Welcome banner -->
+    <div class="mh-dash-banner">
+        <div>
+            <p class="mh-dash-banner__title">
+                Welcome back, {{ current_user.full_name or current_user.email }} &#128075;
+            </p>
+            <p class="mh-dash-banner__sub">
+                Here's what's happening on the shop floor today.
+            </p>
+        </div>
+        <span class="mh-dash-banner__role">&#127970;&nbsp; Plant Manager</span>
+    </div>
+
+    <!-- Stat cards — placeholders until US-9 wires real queries -->
+    <div class="mh-stat-grid">
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#9881;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Active Machines</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#128230;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Open Work Orders</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#128274;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Low Stock Items</span>
+        </div>
+        <div class="mh-stat">
+            <span class="mh-stat__icon">&#128295;</span>
+            <span class="mh-stat__value">—</span>
+            <span class="mh-stat__label">Maintenance Due</span>
         </div>
     </div>
+
+    <!-- Two-column section -->
+    <div class="mh-dash-grid mh-dash-grid--wide">
+
+        <!-- Quick actions -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">Quick actions</h2>
+            <ul class="mh-action-list">
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#9881;</span>
+                        Manage Machines
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128230;</span>
+                        Manage Materials
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128295;</span>
+                        Schedule Maintenance
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="mh-action-list__icon">&#128200;</span>
+                        View Analytics
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('profile.edit') }}">
+                        <span class="mh-action-list__icon">&#128100;</span>
+                        Edit My Profile
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Account summary -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">My account</h2>
+
+            <div style="text-align:center; padding:.75rem 0 1.25rem;">
+                <div style="
+          width:52px; height:52px; border-radius:50%;
+          background:var(--mh-primary);
+          display:inline-flex; align-items:center; justify-content:center;
+          font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:.6rem;">
+                    {{ (current_user.full_name or current_user.email)[0].upper() }}
+                </div>
+                <div style="font-weight:600; font-size:.95rem;">
+                    {{ current_user.full_name or '—' }}
+                </div>
+                <div style="font-size:.8rem; color:var(--mh-muted);">
+                    {{ current_user.email }}
+                </div>
+            </div>
+
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Role</span>
+                <span class="mh-info-row__value">
+                    <span class="mh-badge mh-badge--manager">Plant Manager</span>
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Department</span>
+                <span class="mh-info-row__value">{{ current_user.department or '—' }}</span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Notifications</span>
+                <span class="mh-info-row__value">
+                    {% set pref = current_user.notification_preference.value %}
+                    {% if pref == 'EMAIL' %}
+                    <span class="mh-badge mh-badge--email">Email</span>
+                    {% elif pref == 'SMS' %}
+                    <span class="mh-badge mh-badge--sms">SMS</span>
+                    {% else %}
+                    <span class="mh-badge mh-badge--none">None</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Analytics placeholder — will be replaced in US-9 -->
+    <div class="mh-card">
+        <h2 class="mh-card__title">Production analytics</h2>
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128200;</div>
+            <p class="mh-placeholder__text">
+                Charts and KPI reports will appear here in US-9 (Production Analytics Dashboard).
+            </p>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
