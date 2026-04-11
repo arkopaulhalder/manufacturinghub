@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Materials — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Materials</h1>
+            <p class="mh-page-header__sub">{{ materials|length }} material(s) in catalog</p>
+        </div>
+        {% if current_user.role.value == 'MANAGER' %}
+        <a href="{{ url_for('material.create') }}" class="mh-btn mh-btn--primary">
+            &#43;&nbsp; Add Material
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="mh-card" style="padding:0; overflow:hidden;">
+        {% if materials %}
+        <table class="mh-table">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Unit</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Level</th>
+                    <th>Unit Cost</th>
+                    <th>Stock Status</th>
+                    {% if current_user.role.value == 'MANAGER' %}
+                    <th style="width:130px;">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in materials %}
+                <tr>
+                    <td><code>{{ m.sku }}</code></td>
+                    <td>{{ m.name }}</td>
+                    <td>{{ m.unit.value }}</td>
+                    <td>{{ m.current_stock }} {{ m.unit.value }}</td>
+                    <td>{{ m.reorder_level }} {{ m.unit.value }}</td>
+                    <td>&#8377; {{ "%.2f"|format(m.unit_cost) }}</td>
+                    <td>
+                        {% if m.current_stock <= m.reorder_level %} <span class="mh-badge mh-badge--danger">Low
+                            Stock</span>
+                            {% else %}
+                            <span class="mh-badge mh-badge--active">OK</span>
+                            {% endif %}
+                    </td>
+                    {% if current_user.role.value == 'MANAGER' %}
+                    <td>
+                        <div style="display:flex; gap:.4rem;">
+                            <a href="{{ url_for('material.edit', material_pk=m.id) }}" class="mh-btn mh-btn--ghost"
+                                style="padding:.3rem .7rem; font-size:.8rem;">Edit</a>
+                            <form method="POST" action="{{ url_for('material.delete', material_pk=m.id) }}"
+                                onsubmit="return confirm('Delete material {{ m.sku }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="mh-btn mh-btn--danger"
+                                    style="padding:.3rem .7rem; font-size:.8rem;">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128230;</div>
+            <p class="mh-placeholder__text">No materials added yet.</p>
+            {% if current_user.role.value == 'MANAGER' %}
+            <a href="{{ url_for('material.create') }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">Add
+                First Material</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

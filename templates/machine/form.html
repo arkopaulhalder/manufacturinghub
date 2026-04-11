@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:620px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">{{ title }}</h1>
+            <p class="mh-page-header__sub">
+                {% if machine %}Machine ID: {{ machine.machine_id }}{% else %}Fill in machine details below{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('machine.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <form method="POST" novalidate id="machine-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-grid">
+
+                <div class="mh-form-group">
+                    {{ form.machine_id.label(class="mh-label") }}
+                    {{ form.machine_id(
+                    class="mh-input" + (" is-invalid" if form.machine_id.errors else ""),
+                    placeholder="e.g. CNC-001"
+                    ) }}
+                    <p class="mh-field-hint">Unique identifier — cannot be changed once set.</p>
+                    {% for e in form.machine_id.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.name.label(class="mh-label") }}
+                    {{ form.name(
+                    class="mh-input" + (" is-invalid" if form.name.errors else ""),
+                    placeholder="e.g. CNC Milling Machine 1"
+                    ) }}
+                    {% for e in form.name.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.type.label(class="mh-label") }}
+                    {{ form.type(class="mh-select" + (" is-invalid" if form.type.errors else "")) }}
+                    {% for e in form.type.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.capacity_per_hour.label(class="mh-label") }}
+                    {{ form.capacity_per_hour(
+                    class="mh-input" + (" is-invalid" if form.capacity_per_hour.errors else ""),
+                    placeholder="e.g. 50.00"
+                    ) }}
+                    <p class="mh-field-hint">Units produced per hour. Must be &gt; 0.</p>
+                    {% for e in form.capacity_per_hour.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group mh-form-group--full">
+                    {{ form.status.label(class="mh-label") }}
+                    {{ form.status(class="mh-select" + (" is-invalid" if form.status.errors else "")) }}
+                    {% for e in form.status.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="machine-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">{{ form.submit.label.text }}</span>
+                </button>
+                <a href="{{ url_for('machine.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('machine-form').addEventListener('submit', function () {
+        const btn = document.getElementById('machine-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

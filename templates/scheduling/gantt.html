@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Production Schedule — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Production Schedule</h1>
+            <p class="mh-page-header__sub">
+                {{ orders|length }} active order(s) — scheduled and in progress
+            </p>
+        </div>
+        {% if current_user.role.value == 'PLANNER' %}
+        <div style="display:flex; gap:.6rem;">
+            <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--outline">
+                &#43;&nbsp; New Order
+            </a>
+            <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--ghost">
+                View All Orders
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Gantt table — SRS: simple table with start/end times -->
+    <div class="mh-card" style="padding:0; overflow:hidden;">
+        {% if orders %}
+        <table class="mh-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Machine</th>
+                    <th>Priority</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Est. Hrs</th>
+                    <th>Status</th>
+                    <th>Planner</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" style="font-weight:600;">
+                            WO-{{ "%04d"|format(o.id) }}
+                        </a>
+                    </td>
+                    <td>{{ o.product_name }}</td>
+                    <td>
+                        {% if o.machine %}
+                        <code>{{ o.machine.machine_id }}</code>
+                        <span style="color:var(--mh-muted); font-size:.8rem; margin-left:.3rem;">
+                            {{ o.machine.name }}
+                        </span>
+                        {% else %}
+                        <span style="color:var(--mh-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if o.priority.value == 'HIGH' %}
+                        <span class="mh-badge mh-badge--high">High</span>
+                        {% elif o.priority.value == 'MEDIUM' %}
+                        <span class="mh-badge mh-badge--medium">Medium</span>
+                        {% else %}
+                        <span class="mh-badge mh-badge--low">Low</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space:nowrap;">
+                        {{ o.scheduled_start.strftime('%d %b %Y') }}<br>
+                        <span style="color:var(--mh-muted); font-size:.8rem;">
+                            {{ o.scheduled_start.strftime('%H:%M') }}
+                        </span>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        {{ o.scheduled_end.strftime('%d %b %Y') }}<br>
+                        <span style="color:var(--mh-muted); font-size:.8rem;">
+                            {{ o.scheduled_end.strftime('%H:%M') }}
+                        </span>
+                    </td>
+                    <td>{{ o.estimated_hours }}</td>
+                    <td>
+                        {% if o.status.value == 'SCHEDULED' %}
+                        <span class="mh-badge mh-badge--scheduled">Scheduled</span>
+                        {% else %}
+                        <span class="mh-badge mh-badge--progress">In Progress</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:.85rem;">
+                        {{ o.planner.full_name or o.planner.email }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128197;</div>
+            <p class="mh-placeholder__text">
+                No scheduled or in-progress orders at the moment.
+            </p>
+            {% if current_user.role.value == 'PLANNER' %}
+            <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">
+                View Pending Orders
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Visual timeline bar chart per machine -->
+    {% if orders %}
+    <div class="mh-card">
+        <h2 class="mh-card__title">Machine timeline (today)</h2>
+        <div id="timeline-wrap" style="overflow-x:auto;">
+            <div id="timeline" style="min-width:600px;"></div>
+        </div>
+        <p style="font-size:.78rem; color:var(--mh-muted); margin-top:.75rem;">
+            Only orders starting today are shown in the timeline. All orders appear in the table above.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if orders %}
+<script>
+    /* Build a simple CSS-based horizontal timeline for today's orders */
+    const ORDERS = [
+        {% for o in orders %}
+    {
+        id: { { o.id } },
+        product: "{{ o.product_name | e }}",
+            machine: "{{ o.machine.machine_id if o.machine else '' }}",
+                start: "{{ o.scheduled_start.strftime('%Y-%m-%dT%H:%M:%S') }}",
+                    end: "{{ o.scheduled_end.strftime('%Y-%m-%dT%H:%M:%S') }}",
+                        status: "{{ o.status.value }}"
+    } {% if not loop.last %}, {% endif %}
+    {% endfor %}
+];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const wrap = document.getElementById('timeline');
+        if (!wrap) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today.getTime() + 24 * 3600 * 1000);
+
+        /* Filter orders that overlap with today */
+        const todayOrders = ORDERS.filter(function (o) {
+            const s = new Date(o.start);
+            const e = new Date(o.end);
+            return s < tomorrow && e > today;
+        });
+
+        if (todayOrders.length === 0) {
+            wrap.innerHTML = '<p style="color:var(--mh-muted);font-size:.875rem;padding:.5rem 0;">No orders scheduled for today.</p>';
+            return;
+        }
+
+        /* Group by machine */
+        const machines = {};
+        todayOrders.forEach(function (o) {
+            if (!machines[o.machine]) machines[o.machine] = [];
+            machines[o.machine].push(o);
+        });
+
+        const dayMs = 24 * 3600 * 1000;
+        const barColor = { 'SCHEDULED': 'var(--mh-primary)', 'IN_PROGRESS': '#f59e0b' };
+
+        let html = '<div style="padding:.5rem 0;">';
+
+        /* Hour labels */
+        html += '<div style="display:flex; margin-left:90px; margin-bottom:4px;">';
+        for (let h = 0; h <= 24; h += 4) {
+            html += `<div style="flex:${h === 0 ? 0 : 4};min-width:0;font-size:.72rem;color:var(--mh-muted);text-align:${h === 0 ? 'left' : 'center'};">${String(h).padStart(2, '0')}:00</div>`;
+        }
+        html += '</div>';
+
+        Object.keys(machines).sort().forEach(function (machineName) {
+            html += `<div style="display:flex; align-items:center; margin-bottom:6px;">`;
+            html += `<div style="width:85px;flex-shrink:0;font-size:.8rem;font-weight:600;color:var(--mh-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${machineName}">${machineName}</div>`;
+            html += `<div style="flex:1;position:relative;height:28px;background:var(--mh-page-bg);border-radius:4px;overflow:hidden;">`;
+
+            machines[machineName].forEach(function (o) {
+                const s = Math.max(new Date(o.start) - today, 0);
+                const e = Math.min(new Date(o.end) - today, dayMs);
+                const left = (s / dayMs * 100).toFixed(2);
+                const width = ((e - s) / dayMs * 100).toFixed(2);
+                const color = barColor[o.status] || 'var(--mh-primary)';
+                html += `<div title="WO-${String(o.id).padStart(4, '0')} ${o.product}" style="
+        position:absolute; top:3px; height:22px;
+        left:${left}%; width:${width}%;
+        background:${color}; border-radius:3px;
+        display:flex; align-items:center; padding:0 6px;
+        font-size:.72rem; color:#fff; font-weight:600;
+        overflow:hidden; white-space:nowrap; min-width:4px;
+      ">WO-${String(o.id).padStart(4, '0')}</div>`;
+            });
+
+            html += '</div></div>';
+        });
+
+        html += '</div>';
+        wrap.innerHTML = html;
+    });
+</script>
+{% endif %}
+{% endblock %}

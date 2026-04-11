@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:620px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">{{ title }}</h1>
+            <p class="mh-page-header__sub">
+                {% if material %}SKU: {{ material.sku }}{% else %}Fill in material details below{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <form method="POST" novalidate id="material-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-grid">
+
+                <div class="mh-form-group">
+                    {{ form.sku.label(class="mh-label") }}
+                    {{ form.sku(
+                    class="mh-input" + (" is-invalid" if form.sku.errors else ""),
+                    placeholder="e.g. STL-001"
+                    ) }}
+                    <p class="mh-field-hint">Unique stock-keeping unit code.</p>
+                    {% for e in form.sku.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.name.label(class="mh-label") }}
+                    {{ form.name(
+                    class="mh-input" + (" is-invalid" if form.name.errors else ""),
+                    placeholder="e.g. Steel Sheets"
+                    ) }}
+                    {% for e in form.name.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.unit.label(class="mh-label") }}
+                    {{ form.unit(class="mh-select" + (" is-invalid" if form.unit.errors else "")) }}
+                    {% for e in form.unit.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.unit_cost.label(class="mh-label") }}
+                    {{ form.unit_cost(
+                    class="mh-input" + (" is-invalid" if form.unit_cost.errors else ""),
+                    placeholder="0.00"
+                    ) }}
+                    {% for e in form.unit_cost.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.current_stock.label(class="mh-label") }}
+                    {{ form.current_stock(
+                    class="mh-input" + (" is-invalid" if form.current_stock.errors else ""),
+                    placeholder="0.000"
+                    ) }}
+                    {% for e in form.current_stock.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.reorder_level.label(class="mh-label") }}
+                    {{ form.reorder_level(
+                    class="mh-input" + (" is-invalid" if form.reorder_level.errors else ""),
+                    placeholder="0.000"
+                    ) }}
+                    <p class="mh-field-hint">Alert fires when stock drops to this level.</p>
+                    {% for e in form.reorder_level.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="material-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">{{ form.submit.label.text }}</span>
+                </button>
+                <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('material-form').addEventListener('submit', function () {
+        const btn = document.getElementById('material-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

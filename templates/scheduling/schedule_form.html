@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Schedule WO-{{ "%04d"|format(wo.id) }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Schedule WO-{{ "%04d"|format(wo.id) }}</h1>
+            <p class="mh-page-header__sub">{{ wo.product_name }} &mdash; Qty: {{ wo.quantity }}</p>
+        </div>
+        <a href="{{ url_for('work_order.detail', wo_id=wo.id) }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back to Order
+        </a>
+    </div>
+
+    <!-- Stock warnings — shown but do not block scheduling per SRS -->
+    {% if warnings %}
+    <div class="mh-warning-box">
+        <p class="mh-warning-box__title">&#9888; Material stock warnings — scheduling is still allowed</p>
+        <ul class="mh-warning-box__list">
+            {% for w in warnings %}
+            <li>
+                <strong>{{ w.name }}</strong> — need {{ w.required }} {{ w.unit }},
+                only {{ w.available }} available (shortfall: {{ w.shortfall }} {{ w.unit }}).
+                Ask the manager to restock before starting production.
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="mh-detail-grid">
+
+        <!-- Schedule form -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">Assign machine &amp; time slot</h2>
+
+            <form method="POST" novalidate id="schedule-form">
+                {{ form.hidden_tag() }}
+
+                <div class="mh-form-group">
+                    {{ form.machine_id.label(class="mh-label") }}
+                    {{ form.machine_id(
+                    class="mh-select" + (" is-invalid" if form.machine_id.errors else ""),
+                    id="machine-select",
+                    onchange="updatePreview()"
+                    ) }}
+                    {% for e in form.machine_id.errors %}
+                    <p class="mh-field-error">{{ e }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.scheduled_start.label(class="mh-label") }}
+                    {{ form.scheduled_start(
+                    class="mh-input" + (" is-invalid" if form.scheduled_start.errors else ""),
+                    id="start-input",
+                    onchange="updatePreview()"
+                    ) }}
+                    {% for e in form.scheduled_start.errors %}
+                    <p class="mh-field-error">{{ e }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Live preview of estimated hours and end time -->
+                <div id="preview-box" style="
+          background: var(--mh-primary-light);
+          border: 1px solid var(--mh-primary);
+          border-radius: var(--mh-radius-sm);
+          padding: .75rem 1rem;
+          margin-bottom: 1.1rem;
+          font-size: .875rem;
+          display: none;
+        ">
+                    <p style="margin:0; font-weight:600; color:var(--mh-primary);">Estimated schedule</p>
+                    <p style="margin:.3rem 0 0; color:var(--mh-text);">
+                        Duration: <strong id="preview-hours">—</strong> hrs &nbsp;|&nbsp;
+                        Ends: <strong id="preview-end">—</strong>
+                    </p>
+                </div>
+
+                <button type="submit" class="mh-btn mh-btn--primary mh-btn--full" id="sched-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">&#128197;&nbsp; Confirm Schedule</span>
+                </button>
+
+            </form>
+        </div>
+
+        <!-- Order summary -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">Order summary</h2>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Product</span>
+                <span class="mh-info-row__value">{{ wo.product_name }}</span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Quantity</span>
+                <span class="mh-info-row__value">{{ wo.quantity }}</span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Priority</span>
+                <span class="mh-info-row__value">
+                    {% if wo.priority.value == 'HIGH' %}
+                    <span class="mh-badge mh-badge--high">High</span>
+                    {% elif wo.priority.value == 'MEDIUM' %}
+                    <span class="mh-badge mh-badge--medium">Medium</span>
+                    {% else %}
+                    <span class="mh-badge mh-badge--low">Low</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Target date</span>
+                <span class="mh-info-row__value">
+                    {{ wo.target_completion_date.strftime('%d %b %Y') if wo.target_completion_date else '—' }}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">BOM items</span>
+                <span class="mh-info-row__value">{{ wo.materials|length }} material(s)</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Existing machine schedules — conflict reference -->
+    <div class="mh-card">
+        <h2 class="mh-card__title">Existing bookings (conflict reference)</h2>
+        {% set has_any = namespace(value=false) %}
+        {% for m in machines %}
+        {% if machine_schedules[m.id] %}
+        {% set has_any.value = true %}
+        {% endif %}
+        {% endfor %}
+
+        {% if has_any.value %}
+        <table class="mh-table">
+            <thead>
+                <tr>
+                    <th>Machine</th>
+                    <th>Order</th>
+                    <th>Product</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in machines %}
+                {% for order in machine_schedules[m.id] %}
+                <tr>
+                    <td><code>{{ m.machine_id }}</code></td>
+                    <td>WO-{{ "%04d"|format(order.id) }}</td>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.scheduled_start.strftime('%d %b %Y %H:%M') }}</td>
+                    <td>{{ order.scheduled_end.strftime('%d %b %Y %H:%M') }}</td>
+                    <td>
+                        {% if order.status.value == 'SCHEDULED' %}
+                        <span class="mh-badge mh-badge--scheduled">Scheduled</span>
+                        {% else %}
+                        <span class="mh-badge mh-badge--progress">In Progress</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:var(--mh-muted); font-size:.9rem;">
+            No existing bookings on active machines. All time slots are available.
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    /* Machine capacity data passed from Flask */
+    const MACHINE_DATA = {
+  {% for m in machines %}
+    "{{ m.id }}": { capacity: { { m.capacity_per_hour | float } }, name: "{{ m.machine_id }}" } {% if not loop.last %}, {% endif %}
+    {% endfor %}
+};
+
+    const WO_QUANTITY = {{ wo.quantity | float }};
+
+    function updatePreview() {
+        const machineId = document.getElementById('machine-select').value;
+        const startVal = document.getElementById('start-input').value;
+        const box = document.getElementById('preview-box');
+
+        if (!machineId || !startVal) { box.style.display = 'none'; return; }
+
+        const machine = MACHINE_DATA[machineId];
+        if (!machine) { box.style.display = 'none'; return; }
+
+        /* estimated_hours = CEIL(quantity / capacity_per_hour) — SRS */
+        const estHours = Math.ceil(WO_QUANTITY / machine.capacity);
+        const startDt = new Date(startVal);
+        const endDt = new Date(startDt.getTime() + estHours * 3600 * 1000);
+
+        const fmt = (d) => d.toLocaleDateString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        document.getElementById('preview-hours').textContent = estHours;
+        document.getElementById('preview-end').textContent = fmt(endDt);
+        box.style.display = 'block';
+    }
+
+    document.getElementById('schedule-form').addEventListener('submit', function () {
+        const btn = document.getElementById('sched-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+
+    /* Run preview on page load if values already selected */
+    document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
+{% endblock %}

@@ -49,30 +49,37 @@
             <h2 class="mh-card__title">Quick actions</h2>
             <ul class="mh-action-list">
                 <li>
-                    <a href="#">
+                    <a href="{{ url_for('work_order.create') }}">
                         <span class="mh-action-list__icon">&#43;</span>
                         Create Work Order
                         <span class="mh-action-list__arrow">&#8250;</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
+                    <a href="{{ url_for('scheduling.gantt') }}">
                         <span class="mh-action-list__icon">&#128197;</span>
-                        Schedule Production
+                        View Production Schedule
                         <span class="mh-action-list__arrow">&#8250;</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
+                    <a href="{{ url_for('work_order.list') }}">
+                        <span class="mh-action-list__icon">&#128202;</span>
+                        View My Orders
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('machine.list') }}">
+                        <span class="mh-action-list__icon">&#9881;</span>
+                        View Machines
+                        <span class="mh-action-list__arrow">&#8250;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('material.list') }}">
                         <span class="mh-action-list__icon">&#128230;</span>
                         Check Material Stock
-                        <span class="mh-action-list__arrow">&#8250;</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <span class="mh-action-list__icon">&#128202;</span>
-                        View All Orders
                         <span class="mh-action-list__arrow">&#8250;</span>
                     </a>
                 </li>

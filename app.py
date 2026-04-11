@@ -63,12 +63,20 @@ def create_app(config_object=None):
         return db.session.get(User, int(user_id))
 
     # ---- Blueprints -----------------------------------------------------
-    from blueprints.auth      import auth_bp
-    from blueprints.profile   import profile_bp
-    from blueprints.dashboard import dashboard_bp
-
+    from blueprints.auth        import auth_bp
+    from blueprints.profile     import profile_bp
+    from blueprints.dashboard   import dashboard_bp
+    from blueprints.machine     import machine_bp
+    from blueprints.material    import material_bp
+    from blueprints.work_order  import work_order_bp
+    from blueprints.scheduling  import scheduling_bp
+ 
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(machine_bp)
+    app.register_blueprint(material_bp)
+    app.register_blueprint(work_order_bp)
+    app.register_blueprint(scheduling_bp)
 
     return app

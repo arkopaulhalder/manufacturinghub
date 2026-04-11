@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">{{ title }}</h1>
+            <p class="mh-page-header__sub">Fill in the product details and add required materials.</p>
+        </div>
+        <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <!-- Stock warnings shown after validation -->
+    {% if warnings %}
+    <div class="mh-warning-box">
+        <p class="mh-warning-box__title">&#9888; Stock warnings — you can still save</p>
+        <ul class="mh-warning-box__list">
+            {% for w in warnings %}
+            <li>
+                <strong>{{ w.name }}</strong> — need {{ w.required }} {{ w.unit }},
+                only {{ w.available }} available (shortfall: {{ w.shortfall }} {{ w.unit }}).
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" novalidate id="wo-form">
+        {{ form.hidden_tag() }}
+
+        <!-- Work order header -->
+        <div class="mh-card">
+            <h2 class="mh-card__title">Order details</h2>
+
+            <div class="mh-form-grid">
+
+                <div class="mh-form-group mh-form-group--full">
+                    {{ form.product_name.label(class="mh-label") }}
+                    {{ form.product_name(
+                    class="mh-input" + (" is-invalid" if form.product_name.errors else ""),
+                    placeholder="e.g. Steel Frame Assembly"
+                    ) }}
+                    {% for e in form.product_name.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.quantity.label(class="mh-label") }}
+                    {{ form.quantity(
+                    class="mh-input" + (" is-invalid" if form.quantity.errors else ""),
+                    placeholder="e.g. 100"
+                    ) }}
+                    {% for e in form.quantity.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group">
+                    {{ form.priority.label(class="mh-label") }}
+                    {{ form.priority(class="mh-select" + (" is-invalid" if form.priority.errors else "")) }}
+                    {% for e in form.priority.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+                </div>
+
+                <div class="mh-form-group mh-form-group--full">
+                    <label class="mh-label mh-label--optional" for="{{ form.target_completion_date.id }}">
+                        Target Completion Date
+                    </label>
+                    {{ form.target_completion_date(
+                    class="mh-input" + (" is-invalid" if form.target_completion_date.errors else "")
+                    ) }}
+                    {% for e in form.target_completion_date.errors %}
+                    <p class="mh-field-error">{{ e }}</p>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- BOM section -->
+        <div class="mh-card">
+            <div
+                style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; padding-bottom:.75rem; border-bottom:1px solid var(--mh-border);">
+                <h2 style="font-size:1rem; font-weight:600; margin:0;">Bill of Materials (BOM)</h2>
+                <button type="button" class="mh-btn mh-btn--outline" style="padding:.35rem .85rem; font-size:.85rem;"
+                    onclick="addBomLine()">
+                    &#43;&nbsp; Add Material
+                </button>
+            </div>
+
+            <table class="mh-bom-table" id="bom-table">
+                <thead>
+                    <tr>
+                        <th style="width:50%;">Material</th>
+                        <th style="width:30%;">Required Qty</th>
+                        <th style="width:20%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="bom-body">
+                    <!-- Rows injected by JS on page load and on Add click -->
+                </tbody>
+            </table>
+
+            <p id="bom-empty-msg" style="font-size:.875rem; color:var(--mh-muted); display:none; margin:.5rem 0 0;">
+                No materials added yet. Click "Add Material" above.
+            </p>
+        </div>
+
+        <div style="display:flex; gap:.75rem;">
+            <button type="submit" class="mh-btn mh-btn--primary" id="wo-submit">
+                <span class="mh-spinner"></span>
+                <span class="mh-btn-text">{{ form.submit.label.text }}</span>
+            </button>
+            <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const MATERIALS = [
+        {% for m in materials %}
+        { id: "{{ m.id }}", name: "{{ m.name | e }}", sku: "{{ m.sku | e }}", unit: "{{ m.unit.value }}", stock: {{ m.current_stock | float }} }{% if not loop.last %},{% endif %}
+
+    {% endfor %}
+    ];
+
+
+    const EXISTING_BOM = {{ bom_lines | tojson }};
+
+    let rowIndex = 0;
+
+    function addBomLine(materialId, requiredQty) {
+        const tbody = document.getElementById('bom-body');
+        const idx = rowIndex++;
+
+        const row = document.createElement('tr');
+        row.id = `bom-row-${idx}`;
+
+        let options = '<option value="">— Select material —</option>';
+        MATERIALS.forEach(function (m) {
+            const sel = materialId && String(m.id) === String(materialId) ? 'selected' : '';
+            options += `<option value="${m.id}" ${sel}>${m.name} (${m.sku}) — ${m.stock} ${m.unit} in stock</option>`;
+        });
+
+        const qty = requiredQty || '';
+
+        row.innerHTML = `
+        <td>
+            <select name="material_id_${idx}" class="mh-select" required
+                    onchange="checkStock(this, ${idx})">
+                ${options}
+            </select>
+        </td>
+        <td>
+            <input type="number" name="required_qty_${idx}" class="mh-input"
+                   min="0.001" step="0.001" value="${qty}" placeholder="0.000" required>
+        </td>
+        <td>
+            <button type="button" class="mh-btn mh-btn--danger"
+                    style="padding:.3rem .6rem; font-size:.8rem;"
+                    onclick="removeBomLine(${idx})">&#215;</button>
+        </td>`;
+
+        tbody.appendChild(row);
+        updateEmptyMsg();
+    }
+
+    function removeBomLine(idx) {
+        const row = document.getElementById(`bom-row-${idx}`);
+        if (row) row.remove();
+        updateEmptyMsg();
+    }
+
+    function updateEmptyMsg() {
+        const tbody = document.getElementById('bom-body');
+        const msg = document.getElementById('bom-empty-msg');
+        msg.style.display = tbody.children.length === 0 ? 'block' : 'none';
+    }
+
+    function checkStock(selectEl, idx) {
+        const matId = selectEl.value;
+        const row = document.getElementById(`bom-row-${idx}`);
+        let hint = row.querySelector('.bom-stock-hint');
+
+        if (!hint) {
+            hint = document.createElement('p');
+            hint.className = 'bom-stock-hint mh-field-hint';
+            selectEl.parentNode.appendChild(hint);
+        }
+
+        if (!matId) { hint.textContent = ''; return; }
+        const mat = MATERIALS.find(function (m) { return m.id === matId; });
+        if (mat) hint.textContent = `Available: ${mat.stock} ${mat.unit}`;
+    }
+
+    document.getElementById('wo-form').addEventListener('submit', function (e) {
+        const rows = document.getElementById('bom-body').children;
+        if (rows.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one material to the BOM before saving.');
+            return;
+        }
+        const btn = document.getElementById('wo-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (EXISTING_BOM && EXISTING_BOM.length > 0) {
+            EXISTING_BOM.forEach(function (line) {
+                addBomLine(line.material_id, line.required_qty);
+            });
+        }
+        updateEmptyMsg();
+    });
+</script>
+{% endblock %}

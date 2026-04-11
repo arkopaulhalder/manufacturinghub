@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}WO-{{ "%04d"|format(wo.id) }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">WO-{{ "%04d"|format(wo.id) }}</h1>
+            <p class="mh-page-header__sub">{{ wo.product_name }}</p>
+        </div>
+        <div style="display:flex; gap:.6rem; flex-wrap:wrap;">
+            {% if current_user.role.value == 'PLANNER' and wo.status.value == 'PENDING' %}
+            <a href="{{ url_for('scheduling.schedule', wo_id=wo.id) }}" class="mh-btn mh-btn--primary">&#128197;&nbsp;
+                Schedule</a>
+            <a href="{{ url_for('work_order.edit', wo_id=wo.id) }}" class="mh-btn mh-btn--outline">&#9998;&nbsp;
+                Edit</a>
+            <form method="POST" action="{{ url_for('work_order.delete', wo_id=wo.id) }}"
+                onsubmit="return confirm('Delete WO-{{ '%04d'|format(wo.id) }}? This cannot be undone.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="mh-btn mh-btn--danger">&#128465;&nbsp; Delete</button>
+            </form>
+            {% endif %}
+            {% if current_user.role.value == 'PLANNER' and wo.status.value == 'SCHEDULED' %}
+            <form method="POST" action="{{ url_for('scheduling.unschedule', wo_id=wo.id) }}"
+                onsubmit="return confirm('Unschedule this order and revert to PENDING?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="mh-btn mh-btn--outline">&#8634;&nbsp; Unschedule</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--ghost">
+                &#8592;&nbsp; Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Stock warnings -->
+    {% if warnings %}
+    <div class="mh-warning-box">
+        <p class="mh-warning-box__title">&#9888; Material Stock Warnings</p>
+        <ul class="mh-warning-box__list">
+            {% for w in warnings %}
+            <li>
+                <strong>{{ w.name }}</strong> ({{ w.sku }}) —
+                Need {{ w.required }} {{ w.unit }}, only {{ w.available }} available.
+                Shortfall: {{ w.shortfall }} {{ w.unit }}.
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Header details -->
+    <div class="mh-detail-grid">
+
+        <div class="mh-card">
+            <h2 class="mh-card__title">Order details</h2>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Status</span>
+                <span class="mh-info-row__value">
+                    {% if wo.status.value == 'PENDING' %}
+                    <span class="mh-badge mh-badge--pending">Pending</span>
+                    {% elif wo.status.value == 'SCHEDULED' %}
+                    <span class="mh-badge mh-badge--scheduled">Scheduled</span>
+                    {% elif wo.status.value == 'IN_PROGRESS' %}
+                    <span class="mh-badge mh-badge--progress">In Progress</span>
+                    {% else %}
+                    <span class="mh-badge mh-badge--completed">Completed</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Priority</span>
+                <span class="mh-info-row__value">
+                    {% if wo.priority.value == 'HIGH' %}
+                    <span class="mh-badge mh-badge--high">High</span>
+                    {% elif wo.priority.value == 'MEDIUM' %}
+                    <span class="mh-badge mh-badge--medium">Medium</span>
+                    {% else %}
+                    <span class="mh-badge mh-badge--low">Low</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Quantity</span>
+                <span class="mh-info-row__value">{{ wo.quantity }}</span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Target date</span>
+                <span class="mh-info-row__value">
+                    {{ wo.target_completion_date.strftime('%d %b %Y') if wo.target_completion_date else '—' }}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Created</span>
+                <span class="mh-info-row__value">{{ wo.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+            </div>
+        </div>
+
+        <div class="mh-card">
+            <h2 class="mh-card__title">Assignment</h2>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Planner</span>
+                <span class="mh-info-row__value">
+                    {{ wo.planner.full_name or wo.planner.email }}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Machine</span>
+                <span class="mh-info-row__value">
+                    {% if wo.machine %}
+                    {{ wo.machine.machine_id }} — {{ wo.machine.name }}
+                    {% else %}
+                    <span style="color:var(--mh-muted);">Not yet scheduled</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Scheduled start</span>
+                <span class="mh-info-row__value">
+                    {{ wo.scheduled_start.strftime('%d %b %Y, %H:%M') if wo.scheduled_start else '—' }}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Scheduled end</span>
+                <span class="mh-info-row__value">
+                    {{ wo.scheduled_end.strftime('%d %b %Y, %H:%M') if wo.scheduled_end else '—' }}
+                </span>
+            </div>
+            <div class="mh-info-row">
+                <span class="mh-info-row__label">Est. hours</span>
+                <span class="mh-info-row__value">
+                    {{ wo.estimated_hours if wo.estimated_hours else '—' }}
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOM -->
+    <div class="mh-card">
+        <h2 class="mh-card__title">Bill of Materials (BOM)</h2>
+        {% if wo.materials %}
+        <table class="mh-table">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Material</th>
+                    <th>Required Qty</th>
+                    <th>Unit</th>
+                    <th>Current Stock</th>
+                    <th>Availability</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in wo.materials %}
+                <tr>
+                    <td><code>{{ line.material.sku }}</code></td>
+                    <td>{{ line.material.name }}</td>
+                    <td>{{ line.required_qty }}</td>
+                    <td>{{ line.material.unit.value }}</td>
+                    <td>{{ line.material.current_stock }}</td>
+                    <td>
+                        {% if line.material.current_stock >= line.required_qty %}
+                        <span class="mh-badge mh-badge--active">Sufficient</span>
+                        {% else %}
+                        <span class="mh-badge mh-badge--danger">Insufficient</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:var(--mh-muted); font-size:.9rem;">No materials linked.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
