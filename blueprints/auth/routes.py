@@ -9,7 +9,6 @@ HTTP concerns (redirect, flash, render).
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user, current_user
 
-from models.user import User
 from services.auth_service import (
     attempt_login,
     generate_reset_token,
@@ -62,9 +61,11 @@ def login():
         )
         if success:
             login_user(user)
-            # Redirect to next page or role-based dashboard
+            # Open-redirect hardening: only allow same-site relative paths
             next_page = request.args.get("next")
-            return redirect(next_page or url_for("dashboard.index"))
+            if next_page and next_page.startswith("/") and not next_page.startswith("//"):
+                return redirect(next_page)
+            return redirect(url_for("dashboard.index"))
         flash(message, "danger")
 
     return render_template("auth/login.html", form=form)

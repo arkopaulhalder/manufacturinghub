@@ -42,6 +42,10 @@ class WorkOrderStatus(enum.Enum):
 class WorkOrder(db.Model):
     __tablename__ = "work_orders"
 
+    __table_args__ = (
+        db.CheckConstraint("quantity > 0", name="ck_work_order_quantity_positive"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
 
     # --- US-4: Work Order Creation ---
@@ -90,6 +94,11 @@ class WorkOrderMaterial(db.Model):
 
     __tablename__ = "work_order_materials"
 
+    __table_args__ = (
+        db.UniqueConstraint("work_order_id", "material_id", name="uq_wo_material"),
+        db.CheckConstraint("required_qty > 0", name="ck_wom_required_qty_positive"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     work_order_id = db.Column(
         db.Integer, db.ForeignKey("work_orders.id", ondelete="CASCADE"), nullable=False, index=True
@@ -98,11 +107,6 @@ class WorkOrderMaterial(db.Model):
         db.Integer, db.ForeignKey("materials.id"), nullable=False, index=True
     )
     required_qty = db.Column(db.Numeric(12, 3), nullable=False)         # > 0, CHECK in migration
-
-    # Prevent duplicate material entries per work order
-    __table_args__ = (
-        db.UniqueConstraint("work_order_id", "material_id", name="uq_wo_material"),
-    )
 
     # --- Relationships ---
     work_order = db.relationship("WorkOrder", back_populates="materials")

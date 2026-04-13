@@ -2,73 +2,69 @@
 {% block title %}Machines — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="mh-page">
+<div class="mh-page mh-page--wide">
 
-    <div class="mh-page-header">
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
         <div>
             <h1 class="mh-page-header__title">Machines</h1>
-            <p class="mh-page-header__sub">{{ machines|length }} machine(s) in catalog</p>
+            <p class="mh-page-header__sub mb-0">{{ machines|length }} machine(s) in catalog</p>
         </div>
         {% if current_user.role.value == 'MANAGER' %}
-        <a href="{{ url_for('machine.create') }}" class="mh-btn mh-btn--primary">
+        <a href="{{ url_for('machine.create') }}" class="mh-btn mh-btn--primary ms-sm-auto">
             &#43;&nbsp; Add Machine
         </a>
         {% endif %}
     </div>
 
-    <div class="mh-card" style="padding:0; overflow:hidden;">
+    <div class="mh-card mh-card--schedule">
         {% if machines %}
-        <table class="mh-table">
-            <thead>
-                <tr>
-                    <th>Machine ID</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Capacity / hr</th>
-                    <th>Status</th>
-                    {% if current_user.role.value == 'MANAGER' %}
-                    <th style="width:120px;">Actions</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in machines %}
-                <tr>
-                    <td><code>{{ m.machine_id }}</code></td>
-                    <td>{{ m.name }}</td>
-                    <td>{{ m.type.value }}</td>
-                    <td>{{ m.capacity_per_hour }}</td>
-                    <td>
-                        {% if m.status.value == 'ACTIVE' %}
-                        <span class="mh-badge mh-badge--active">Active</span>
-                        {% elif m.status.value == 'MAINTENANCE' %}
-                        <span class="mh-badge mh-badge--warning">Maintenance</span>
-                        {% else %}
-                        <span class="mh-badge mh-badge--none">Offline</span>
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Machine ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col" class="text-nowrap">Type</th>
+                        <th scope="col" class="text-end text-nowrap">Capacity / hr</th>
+                        <th scope="col" class="text-nowrap">Status</th>
+                        {% if current_user.role.value == 'MANAGER' %}
+                        <th scope="col" class="text-nowrap text-end">Actions</th>
                         {% endif %}
-                    </td>
-                    {% if current_user.role.value == 'MANAGER' %}
-                    <td>
-                        <div style="display:flex; gap:.4rem;">
-                            <a href="{{ url_for('machine.edit', machine_pk=m.id) }}" class="mh-btn mh-btn--ghost"
-                                style="padding:.3rem .7rem; font-size:.8rem;">
-                                Edit
-                            </a>
-                            <form method="POST" action="{{ url_for('machine.delete', machine_pk=m.id) }}"
-                                onsubmit="return confirm('Delete machine {{ m.machine_id }}?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="mh-btn mh-btn--danger"
-                                    style="padding:.3rem .7rem; font-size:.8rem;">
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in machines %}
+                    <tr>
+                        <td class="text-nowrap"><code class="small">{{ m.machine_id }}</code></td>
+                        <td class="mh-schedule-cell--product">{{ m.name }}</td>
+                        <td class="text-nowrap">{{ m.type.value }}</td>
+                        <td class="text-end text-nowrap font-monospace small">{{ m.capacity_per_hour }}</td>
+                        <td class="text-nowrap">
+                            {% if m.status.value == 'ACTIVE' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--active">Active</span>
+                            {% elif m.status.value == 'MAINTENANCE' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--warning">Maintenance</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--none">Offline</span>
+                            {% endif %}
+                        </td>
+                        {% if current_user.role.value == 'MANAGER' %}
+                        <td class="text-end text-nowrap">
+                            <div class="d-inline-flex flex-nowrap gap-1 align-items-center justify-content-end">
+                                <a href="{{ url_for('machine.edit', machine_pk=m.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">Edit</a>
+                                <form method="POST" action="{{ url_for('machine.delete', machine_pk=m.id) }}" class="d-inline"
+                                    onsubmit="return confirm('Delete machine {{ m.machine_id }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="mh-btn mh-btn--danger mh-btn--table">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="mh-placeholder">
             <div class="mh-placeholder__icon">&#9881;</div>

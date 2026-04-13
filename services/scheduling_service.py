@@ -25,8 +25,6 @@ SRS Don'ts:
 import math
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_
-
 from models.base import db
 from models.machine import Machine, MachineStatus
 from models.work_order import WorkOrder, WorkOrderStatus
@@ -96,7 +94,10 @@ def calculate_estimated_hours(quantity: float, capacity_per_hour: float) -> floa
     """
     SRS: estimated_hours = CEIL(quantity / machine.capacity_per_hour)
     """
-    return math.ceil(quantity / capacity_per_hour)
+    cap = float(capacity_per_hour)
+    if cap <= 0:
+        raise ValueError("Machine capacity must be positive.")
+    return math.ceil(float(quantity) / cap)
 
 
 def check_machine_conflicts(
@@ -171,6 +172,19 @@ def schedule_work_order(
 
     if not machine:
         return False, "Machine not found."
+
+    # Lock existing bookings on this machine so two planners cannot create overlaps (phantom rows)
+    (
+        WorkOrder.query.filter(
+            WorkOrder.machine_id == machine_pk,
+            WorkOrder.status.in_([
+                WorkOrderStatus.SCHEDULED,
+                WorkOrderStatus.IN_PROGRESS,
+            ]),
+        )
+        .with_for_update()
+        .all()
+    )
 
     # SRS Don't: Do not schedule on MAINTENANCE or OFFLINE machines
     if machine.status == MachineStatus.MAINTENANCE:

@@ -16,7 +16,7 @@ SRS acceptance criteria covered:
 
 from models.base import db
 from models.machine import Machine, MachineType, MachineStatus
-from models.work_order import WorkOrder, WorkOrderStatus
+from models.work_order import WorkOrder
 
 
 # ------------------------------------------------------------------ #
@@ -141,21 +141,12 @@ def delete_machine(machine_pk: int) -> tuple[bool, str]:
     if not machine:
         return False, "Machine not found."
 
-    # SRS Dos: prevent deletion if referenced in active work orders
-    active_statuses = [
-        WorkOrderStatus.PENDING,
-        WorkOrderStatus.SCHEDULED,
-        WorkOrderStatus.IN_PROGRESS,
-    ]
-    active_orders = WorkOrder.query.filter(
-        WorkOrder.machine_id == machine_pk,
-        WorkOrder.status.in_(active_statuses),
-    ).count()
-
-    if active_orders > 0:
+    # Any work order still pointing at this machine would violate FK or lose history
+    ref_count = WorkOrder.query.filter(WorkOrder.machine_id == machine_pk).count()
+    if ref_count > 0:
         return False, (
-            f"Cannot delete — this machine has {active_orders} active work order(s). "
-            "Complete or reassign them first."
+            f"Cannot delete — this machine is linked to {ref_count} work order(s). "
+            "Reassign or archive those orders first."
         )
 
     db.session.delete(machine)

@@ -16,14 +16,12 @@ from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from decorators.rbac import requires_role
-from models.user import UserRole
 from services.scheduling_service import (
     get_available_machines,
     get_machine_schedule,
     get_scheduled_orders_for_gantt,
     schedule_work_order,
     unschedule_work_order,
-    check_machine_conflicts,
     calculate_estimated_hours,
 )
 from services.work_order_service import (

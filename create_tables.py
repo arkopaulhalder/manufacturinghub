@@ -1,7 +1,13 @@
 """
-Run this ONCE to create all tables in MySQL.
+Create all tables in MySQL (development bootstrap).
+
 Usage:
-    .\.projectenv\Scripts\python.exe create_tables.py
+    python create_tables.py
+
+For production, prefer Flask-Migrate (`flask db migrate` / `flask db upgrade`) so
+schema changes (e.g. CHECK constraints) are versioned. If tables already exist,
+`create_all()` will not alter them; apply migrations or recreate tables to pick up
+new constraints.
 """
 
 from app import create_app

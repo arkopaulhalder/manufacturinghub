@@ -32,6 +32,10 @@ class MachineStatus(enum.Enum):
 class Machine(db.Model):
     __tablename__ = "machines"
 
+    __table_args__ = (
+        db.CheckConstraint("capacity_per_hour > 0", name="ck_machine_capacity_positive"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     machine_id = db.Column(db.String(50), unique=True, nullable=False)  # business key, no duplicates
     name = db.Column(db.String(255), nullable=False)

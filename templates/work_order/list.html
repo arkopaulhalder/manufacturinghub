@@ -2,81 +2,82 @@
 {% block title %}Work Orders — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="mh-page">
+<div class="mh-page mh-page--wide">
 
-    <div class="mh-page-header">
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
         <div>
             <h1 class="mh-page-header__title">Work Orders</h1>
-            <p class="mh-page-header__sub">{{ orders|length }} order(s) found</p>
+            <p class="mh-page-header__sub mb-0">{{ orders|length }} order(s) found</p>
         </div>
         {% if current_user.role.value == 'PLANNER' %}
-        <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary">
+        <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary ms-sm-auto">
             &#43;&nbsp; New Work Order
         </a>
         {% endif %}
     </div>
 
-    <div class="mh-card" style="padding:0; overflow:hidden;">
+    <div class="mh-card mh-card--schedule">
         {% if orders %}
-        <table class="mh-table">
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Target Date</th>
-                    {% if current_user.role.value == 'MANAGER' %}
-                    <th>Planner</th>
-                    {% endif %}
-                    <th style="width:80px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for o in orders %}
-                <tr>
-                    <td>
-                        <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" style="font-weight:600;">
-                            WO-{{ "%04d"|format(o.id) }}
-                        </a>
-                    </td>
-                    <td>{{ o.product_name }}</td>
-                    <td>{{ o.quantity }}</td>
-                    <td>
-                        {% if o.priority.value == 'HIGH' %}
-                        <span class="mh-badge mh-badge--high">High</span>
-                        {% elif o.priority.value == 'MEDIUM' %}
-                        <span class="mh-badge mh-badge--medium">Medium</span>
-                        {% else %}
-                        <span class="mh-badge mh-badge--low">Low</span>
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Order ID</th>
+                        <th scope="col">Product</th>
+                        <th scope="col" class="text-end text-nowrap">Qty</th>
+                        <th scope="col" class="text-nowrap">Priority</th>
+                        <th scope="col" class="text-nowrap">Status</th>
+                        <th scope="col" class="text-nowrap">Target date</th>
+                        {% if current_user.role.value == 'MANAGER' %}
+                        <th scope="col">Planner</th>
                         {% endif %}
-                    </td>
-                    <td>
-                        {% if o.status.value == 'PENDING' %}
-                        <span class="mh-badge mh-badge--pending">Pending</span>
-                        {% elif o.status.value == 'SCHEDULED' %}
-                        <span class="mh-badge mh-badge--scheduled">Scheduled</span>
-                        {% elif o.status.value == 'IN_PROGRESS' %}
-                        <span class="mh-badge mh-badge--progress">In Progress</span>
-                        {% else %}
-                        <span class="mh-badge mh-badge--completed">Completed</span>
+                        <th scope="col" class="text-nowrap text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td class="text-nowrap">
+                            <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-schedule-link">
+                                WO-{{ "%04d"|format(o.id) }}
+                            </a>
+                        </td>
+                        <td class="mh-schedule-cell--product">{{ o.product_name }}</td>
+                        <td class="text-end text-nowrap font-monospace small">{{ o.quantity }}</td>
+                        <td>
+                            {% if o.priority.value == 'HIGH' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--high">High</span>
+                            {% elif o.priority.value == 'MEDIUM' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--medium">Medium</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--low">Low</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap">
+                            {% if o.status.value == 'PENDING' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--pending">Pending</span>
+                            {% elif o.status.value == 'SCHEDULED' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--scheduled">Scheduled</span>
+                            {% elif o.status.value == 'IN_PROGRESS' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--progress">In progress</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--completed">Completed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap">
+                            {{ o.target_completion_date.strftime('%d %b %Y') if o.target_completion_date else '—' }}
+                        </td>
+                        {% if current_user.role.value == 'MANAGER' %}
+                        <td class="mh-schedule-cell--planner">{{ o.planner.full_name or o.planner.email }}</td>
                         {% endif %}
-                    </td>
-                    <td>
-                        {{ o.target_completion_date.strftime('%d %b %Y') if o.target_completion_date else '—' }}
-                    </td>
-                    {% if current_user.role.value == 'MANAGER' %}
-                    <td>{{ o.planner.full_name or o.planner.email }}</td>
-                    {% endif %}
-                    <td>
-                        <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-btn mh-btn--ghost"
-                            style="padding:.3rem .7rem; font-size:.8rem;">View</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <td class="text-end text-nowrap">
+                            <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="mh-placeholder">
             <div class="mh-placeholder__icon">&#128203;</div>

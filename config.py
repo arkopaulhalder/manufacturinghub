@@ -12,6 +12,10 @@ load_dotenv()  # loads .env file into os.environ
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Session hardening (US-1)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 280,
@@ -55,6 +59,7 @@ class DevelopmentConfig(BaseConfig):
 class ProductionConfig(BaseConfig):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
 
 
 class TestingConfig(BaseConfig):

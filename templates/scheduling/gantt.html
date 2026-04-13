@@ -2,17 +2,17 @@
 {% block title %}Production Schedule — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="mh-page">
+<div class="mh-page mh-page--wide">
 
-    <div class="mh-page-header">
+    <div class="mh-page-header flex-column flex-md-row align-items-start align-items-md-center gap-3">
         <div>
             <h1 class="mh-page-header__title">Production Schedule</h1>
-            <p class="mh-page-header__sub">
+            <p class="mh-page-header__sub mb-0">
                 {{ orders|length }} active order(s) — scheduled and in progress
             </p>
         </div>
         {% if current_user.role.value == 'PLANNER' %}
-        <div style="display:flex; gap:.6rem;">
+        <div class="d-flex flex-wrap gap-2 ms-md-auto">
             <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--outline">
                 &#43;&nbsp; New Order
             </a>
@@ -23,78 +23,74 @@
         {% endif %}
     </div>
 
-    <!-- Gantt table — SRS: simple table with start/end times -->
-    <div class="mh-card" style="padding:0; overflow:hidden;">
+    <!-- Responsive scroll: horizontal only when viewport &lt; table min-width -->
+    <div class="mh-card mh-card--schedule">
         {% if orders %}
-        <table class="mh-table">
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Product</th>
-                    <th>Machine</th>
-                    <th>Priority</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Est. Hrs</th>
-                    <th>Status</th>
-                    <th>Planner</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for o in orders %}
-                <tr>
-                    <td>
-                        <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" style="font-weight:600;">
-                            WO-{{ "%04d"|format(o.id) }}
-                        </a>
-                    </td>
-                    <td>{{ o.product_name }}</td>
-                    <td>
-                        {% if o.machine %}
-                        <code>{{ o.machine.machine_id }}</code>
-                        <span style="color:var(--mh-muted); font-size:.8rem; margin-left:.3rem;">
-                            {{ o.machine.name }}
-                        </span>
-                        {% else %}
-                        <span style="color:var(--mh-muted);">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if o.priority.value == 'HIGH' %}
-                        <span class="mh-badge mh-badge--high">High</span>
-                        {% elif o.priority.value == 'MEDIUM' %}
-                        <span class="mh-badge mh-badge--medium">Medium</span>
-                        {% else %}
-                        <span class="mh-badge mh-badge--low">Low</span>
-                        {% endif %}
-                    </td>
-                    <td style="white-space:nowrap;">
-                        {{ o.scheduled_start.strftime('%d %b %Y') }}<br>
-                        <span style="color:var(--mh-muted); font-size:.8rem;">
-                            {{ o.scheduled_start.strftime('%H:%M') }}
-                        </span>
-                    </td>
-                    <td style="white-space:nowrap;">
-                        {{ o.scheduled_end.strftime('%d %b %Y') }}<br>
-                        <span style="color:var(--mh-muted); font-size:.8rem;">
-                            {{ o.scheduled_end.strftime('%H:%M') }}
-                        </span>
-                    </td>
-                    <td>{{ o.estimated_hours }}</td>
-                    <td>
-                        {% if o.status.value == 'SCHEDULED' %}
-                        <span class="mh-badge mh-badge--scheduled">Scheduled</span>
-                        {% else %}
-                        <span class="mh-badge mh-badge--progress">In Progress</span>
-                        {% endif %}
-                    </td>
-                    <td style="font-size:.85rem;">
-                        {{ o.planner.full_name or o.planner.email }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Order ID</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Machine</th>
+                        <th scope="col" class="text-nowrap">Priority</th>
+                        <th scope="col" class="text-nowrap">Start</th>
+                        <th scope="col" class="text-nowrap">End</th>
+                        <th scope="col" class="text-end text-nowrap">Est. hrs</th>
+                        <th scope="col" class="text-nowrap">Status</th>
+                        <th scope="col">Planner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td class="text-nowrap">
+                            <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-schedule-link">
+                                WO-{{ "%04d"|format(o.id) }}
+                            </a>
+                        </td>
+                        <td class="mh-schedule-cell--product">{{ o.product_name }}</td>
+                        <td>
+                            {% if o.machine %}
+                            <div class="mh-machine-cell">
+                                <span class="mh-machine-cell__id">{{ o.machine.machine_id }}</span>
+                                <span class="mh-machine-cell__name">{{ o.machine.name }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if o.priority.value == 'HIGH' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--high">High</span>
+                            {% elif o.priority.value == 'MEDIUM' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--medium">Medium</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--low">Low</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap mh-schedule-cell--datetime">
+                            <span class="mh-schedule-date">{{ o.scheduled_start.strftime('%d %b %Y') }}</span>
+                            <span class="mh-schedule-time">{{ o.scheduled_start.strftime('%H:%M') }}</span>
+                        </td>
+                        <td class="text-nowrap mh-schedule-cell--datetime">
+                            <span class="mh-schedule-date">{{ o.scheduled_end.strftime('%d %b %Y') }}</span>
+                            <span class="mh-schedule-time">{{ o.scheduled_end.strftime('%H:%M') }}</span>
+                        </td>
+                        <td class="text-end text-nowrap font-monospace small">{{ "%.2f"|format(o.estimated_hours|float) }}</td>
+                        <td class="text-nowrap">
+                            {% if o.status.value == 'SCHEDULED' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--scheduled">Scheduled</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--progress">In progress</span>
+                            {% endif %}
+                        </td>
+                        <td class="mh-schedule-cell--planner">{{ o.planner.full_name or o.planner.email }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="mh-placeholder">
             <div class="mh-placeholder__icon">&#128197;</div>
@@ -132,16 +128,16 @@
     /* Build a simple CSS-based horizontal timeline for today's orders */
     const ORDERS = [
         {% for o in orders %}
-    {
-        id: { { o.id } },
-        product: "{{ o.product_name | e }}",
+        {
+            id: {{ o.id }},
+            product: "{{ o.product_name | e }}",
             machine: "{{ o.machine.machine_id if o.machine else '' }}",
-                start: "{{ o.scheduled_start.strftime('%Y-%m-%dT%H:%M:%S') }}",
-                    end: "{{ o.scheduled_end.strftime('%Y-%m-%dT%H:%M:%S') }}",
-                        status: "{{ o.status.value }}"
-    } {% if not loop.last %}, {% endif %}
-    {% endfor %}
-];
+            start: "{{ o.scheduled_start.strftime('%Y-%m-%dT%H:%M:%S') }}",
+            end: "{{ o.scheduled_end.strftime('%Y-%m-%dT%H:%M:%S') }}",
+            status: "{{ o.status.value }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
 
     document.addEventListener('DOMContentLoaded', function () {
         const wrap = document.getElementById('timeline');

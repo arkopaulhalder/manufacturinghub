@@ -26,6 +26,12 @@ class MaterialUnit(enum.Enum):
 class Material(db.Model):
     __tablename__ = "materials"
 
+    __table_args__ = (
+        db.CheckConstraint("current_stock >= 0", name="ck_material_stock_non_negative"),
+        db.CheckConstraint("reorder_level > 0", name="ck_material_reorder_positive"),
+        db.CheckConstraint("unit_cost > 0", name="ck_material_unit_cost_positive"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     sku = db.Column(db.String(100), unique=True, nullable=False)        # no duplicates per SRS
     name = db.Column(db.String(255), nullable=False)

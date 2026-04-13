@@ -58,7 +58,7 @@ def get_profile(user_id: int, requesting_user_id: int) -> tuple[bool, str, User 
     if user_id != requesting_user_id:
         return False, "Not authorized to view this profile.", None
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return False, "User not found.", None
 
@@ -86,7 +86,7 @@ def update_profile(
     if user_id != requesting_user_id:
         return False, "Not authorized to edit this profile."
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return False, "User not found."
 

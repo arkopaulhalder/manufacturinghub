@@ -2,117 +2,121 @@
 {% block title %}Planner Dashboard — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="mh-dash">
+<div class="mh-dash mh-dash--planner">
 
-    <!-- Welcome banner -->
-    <div class="mh-dash-banner">
-        <div>
-            <p class="mh-dash-banner__title">
-                Welcome back, {{ current_user.full_name or current_user.email }} &#128075;
-            </p>
-            <p class="mh-dash-banner__sub">
-                Manage your work orders and track production progress.
-            </p>
+    <header class="mh-dash-banner">
+        <div class="mh-dash-banner__inner w-100">
+            <div>
+                <p class="mh-dash-banner__eyebrow">Production</p>
+                <h1 class="mh-dash-banner__title">
+                    Welcome back, {{ current_user.full_name or current_user.email }}
+                </h1>
+                <p class="mh-dash-banner__sub">
+                    Create work orders, keep the schedule current, and track progress from one place.
+                </p>
+            </div>
+            <span class="mh-dash-banner__role">
+                <i class="bi bi-kanban" aria-hidden="true"></i>
+                Production Planner
+            </span>
         </div>
-        <span class="mh-dash-banner__role">&#128203;&nbsp; Production Planner</span>
+    </header>
+
+    <div class="mh-dash-cta">
+        <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            New work order
+        </a>
+        <a href="{{ url_for('scheduling.gantt') }}" class="mh-btn mh-btn--outline">
+            <i class="bi bi-calendar3" aria-hidden="true"></i>
+            Open schedule
+        </a>
     </div>
 
-    <!-- Stat cards — placeholders until work order US stories wire real queries -->
     <div class="mh-stat-grid">
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#128203;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Pending Orders</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#128197;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Scheduled Orders</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#9654;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">In Progress</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#10003;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Completed Today</span>
-        </div>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--neutral"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.pending }}</span>
+            <span class="mh-stat__label">Pending</span>
+            <span class="mh-stat__hint">Live snapshot</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--slate"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.scheduled }}</span>
+            <span class="mh-stat__label">Scheduled</span>
+            <span class="mh-stat__hint">Live snapshot</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--warning"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.in_progress }}</span>
+            <span class="mh-stat__label">In progress</span>
+            <span class="mh-stat__hint">Live snapshot</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--success"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.completed_today }}</span>
+            <span class="mh-stat__label">Completed today</span>
+            <span class="mh-stat__hint">Updated today (UTC)</span>
+        </article>
     </div>
 
-    <!-- Two-column section -->
     <div class="mh-dash-grid mh-dash-grid--wide">
-
-        <!-- Quick actions -->
-        <div class="mh-card">
-            <h2 class="mh-card__title">Quick actions</h2>
+        <div class="mh-card mh-card--dash">
+            <h2 class="mh-card__title--dash">Quick actions</h2>
             <ul class="mh-action-list">
                 <li>
                     <a href="{{ url_for('work_order.create') }}">
-                        <span class="mh-action-list__icon">&#43;</span>
-                        Create Work Order
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-clipboard-plus" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Create work order</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('scheduling.gantt') }}">
-                        <span class="mh-action-list__icon">&#128197;</span>
-                        View Production Schedule
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Production schedule</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('work_order.list') }}">
-                        <span class="mh-action-list__icon">&#128202;</span>
-                        View My Orders
-                        <span class="mh-action-list__arrow">&#8250;</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('machine.list') }}">
-                        <span class="mh-action-list__icon">&#9881;</span>
-                        View Machines
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-list-task" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">My work orders</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('material.list') }}">
-                        <span class="mh-action-list__icon">&#128230;</span>
-                        Check Material Stock
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Material stock</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('profile.edit') }}">
-                        <span class="mh-action-list__icon">&#128100;</span>
-                        Edit My Profile
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Edit profile</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
             </ul>
         </div>
 
-        <!-- Account summary -->
-        <div class="mh-card">
-            <h2 class="mh-card__title">My account</h2>
-
-            <div style="text-align:center; padding:.75rem 0 1.25rem;">
-                <div style="
-          width:52px; height:52px; border-radius:50%;
-          background:var(--mh-primary);
-          display:inline-flex; align-items:center; justify-content:center;
-          font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:.6rem;">
-                    {{ (current_user.full_name or current_user.email)[0].upper() }}
-                </div>
-                <div style="font-weight:600; font-size:.95rem;">
-                    {{ current_user.full_name or '—' }}
-                </div>
-                <div style="font-size:.8rem; color:var(--mh-muted);">
-                    {{ current_user.email }}
-                </div>
+        <div class="mh-card mh-card--dash">
+            <h2 class="mh-card__title--dash">My account</h2>
+            <div class="mh-account-block">
+                <div class="mh-account-avatar">{{ (current_user.full_name or current_user.email)[0].upper() }}</div>
+                <div class="mh-account-name">{{ current_user.full_name or '—' }}</div>
+                <div class="mh-account-email">{{ current_user.email }}</div>
             </div>
-
             <div class="mh-info-row">
                 <span class="mh-info-row__label">Role</span>
                 <span class="mh-info-row__value">
@@ -137,19 +141,59 @@
                 </span>
             </div>
         </div>
-
     </div>
 
-    <!-- Work orders placeholder — will be replaced when US-4 is built -->
-    <div class="mh-card">
-        <h2 class="mh-card__title">Recent work orders</h2>
-        <div class="mh-placeholder">
-            <div class="mh-placeholder__icon">&#128203;</div>
-            <p class="mh-placeholder__text">
-                Your work orders will appear here once US-4 (Work Order Creation) is implemented.
-            </p>
+    <section class="mh-card mh-card--dash mh-card--dash-table">
+        <h2 class="mh-card__title--dash mh-card__title--dash-pad">Recent work orders</h2>
+        {% if recent_orders %}
+        <div class="mh-card mh-card--schedule mh-card--nested-table">
+            <div class="table-responsive mh-schedule-table-wrap">
+                <table class="table table-hover mh-schedule-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="text-nowrap">Order ID</th>
+                            <th scope="col">Product</th>
+                            <th scope="col" class="text-nowrap">Status</th>
+                            <th scope="col" class="text-nowrap">Target date</th>
+                            <th scope="col" class="text-end text-nowrap">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in recent_orders %}
+                        <tr>
+                            <td class="text-nowrap">
+                                <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-schedule-link">WO-{{ "%04d"|format(o.id) }}</a>
+                            </td>
+                            <td class="mh-schedule-cell--product">{{ o.product_name }}</td>
+                            <td class="text-nowrap">
+                                {% if o.status.value == 'PENDING' %}
+                                <span class="badge rounded-pill mh-badge mh-badge--pending">Pending</span>
+                                {% elif o.status.value == 'SCHEDULED' %}
+                                <span class="badge rounded-pill mh-badge mh-badge--scheduled">Scheduled</span>
+                                {% elif o.status.value == 'IN_PROGRESS' %}
+                                <span class="badge rounded-pill mh-badge mh-badge--progress">In progress</span>
+                                {% else %}
+                                <span class="badge rounded-pill mh-badge mh-badge--completed">Completed</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">{{ o.target_completion_date.strftime('%d %b %Y') if o.target_completion_date else '—' }}</td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('work_order.detail', wo_id=o.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+        {% else %}
+        <div class="mh-placeholder" style="padding:1.5rem 0;">
+            <div class="mh-placeholder__icon"><i class="bi bi-inbox" style="font-size:2rem;opacity:.6;"></i></div>
+            <p class="mh-placeholder__text">No work orders yet. Create your first one to see it here.</p>
+            <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">Create work order</a>
+        </div>
+        {% endif %}
+    </section>
 
 </div>
 {% endblock %}

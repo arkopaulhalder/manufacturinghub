@@ -70,7 +70,7 @@ def create_app(config_object=None):
     from blueprints.material    import material_bp
     from blueprints.work_order  import work_order_bp
     from blueprints.scheduling  import scheduling_bp
- 
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(dashboard_bp)

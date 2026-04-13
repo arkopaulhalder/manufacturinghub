@@ -17,10 +17,11 @@ US-1 acceptance criteria covered:
 
 import re
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from flask import current_app
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
 
 from models.base import db
 from models.user import User, UserRole
@@ -31,7 +32,27 @@ from models.user import User, UserRole
 # ------------------------------------------------------------------ #
 
 def _now():
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
+
+
+def _hash_password_bcrypt(password: str) -> str:
+    """SRS: store passwords with bcrypt (not Werkzeug default scrypt/pbkdf2)."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _password_matches_stored(password: str, stored_hash: str) -> bool:
+    """
+    Verify password. Accepts bcrypt hashes; falls back to legacy Werkzeug hashes
+    so existing DB rows keep working until the user changes password.
+    """
+    if not stored_hash:
+        return False
+    if stored_hash.startswith(("$2a$", "$2b$", "$2y$")):
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+        except (ValueError, TypeError):
+            return False
+    return check_password_hash(stored_hash, password)
 
 
 def _is_valid_email(email: str) -> bool:
@@ -79,7 +100,7 @@ def register_user(email: str, password: str, role_str: str) -> tuple[bool, str]:
 
     user = User(
         email=email,
-        password_hash=generate_password_hash(password),
+        password_hash=_hash_password_bcrypt(password),
         role=role,
     )
     db.session.add(user)
@@ -117,12 +138,16 @@ def attempt_login(email: str, password: str) -> tuple[bool, str, User | None]:
         user.login_attempt_count = 0
         user.login_lockout_until = None
 
-    if not check_password_hash(user.password_hash, password):
+    if not _password_matches_stored(password, user.password_hash):
         user.login_attempt_count += 1
         if user.login_attempt_count >= max_attempts:
             user.login_lockout_until = _now() + timedelta(minutes=lockout_mins)
         db.session.commit()
         return False, generic_error, None
+
+    # Upgrade legacy Werkzeug hash to bcrypt on successful login
+    if not user.password_hash.startswith(("$2a$", "$2b$", "$2y$")):
+        user.password_hash = _hash_password_bcrypt(password)
 
     # Successful login — reset counter
     user.login_attempt_count = 0
@@ -172,7 +197,7 @@ def reset_password(token: str, new_password: str) -> tuple[bool, str]:
     if _now() > user.reset_token_expires:
         return False, "Invalid or expired reset link."
 
-    user.password_hash = generate_password_hash(new_password)
+    user.password_hash = _hash_password_bcrypt(new_password)
     user.reset_token = None
     user.reset_token_expires = None
     db.session.commit()

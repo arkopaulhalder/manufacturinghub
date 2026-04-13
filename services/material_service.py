@@ -16,7 +16,7 @@ SRS acceptance criteria covered:
 
 from models.base import db
 from models.material import Material, MaterialUnit
-from models.work_order import WorkOrder, WorkOrderMaterial, WorkOrderStatus
+from models.work_order import WorkOrderMaterial
 
 
 # ------------------------------------------------------------------ #
@@ -162,26 +162,12 @@ def delete_material(material_pk: int) -> tuple[bool, str]:
     if not material:
         return False, "Material not found."
 
-    # SRS Dos: prevent deletion if referenced in active work orders
-    active_statuses = [
-        WorkOrderStatus.PENDING,
-        WorkOrderStatus.SCHEDULED,
-        WorkOrderStatus.IN_PROGRESS,
-    ]
-    active_ref = (
-        db.session.query(WorkOrderMaterial)
-        .join(WorkOrder)
-        .filter(
-            WorkOrderMaterial.material_id == material_pk,
-            WorkOrder.status.in_(active_statuses),
-        )
-        .count()
-    )
-
-    if active_ref > 0:
+    # BOM lines keep FK to materials — block delete if any work order references this SKU
+    bom_ref = WorkOrderMaterial.query.filter_by(material_id=material_pk).count()
+    if bom_ref > 0:
         return False, (
-            f"Cannot delete — this material is used in {active_ref} active work order(s). "
-            "Complete or update those orders first."
+            f"Cannot delete — this material appears on {bom_ref} work order BOM line(s). "
+            "Remove it from those orders first."
         )
 
     db.session.delete(material)

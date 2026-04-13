@@ -2,110 +2,120 @@
 {% block title %}Manager Dashboard — ManufacturingHub{% endblock %}
 
 {% block content %}
-<div class="mh-dash">
+<div class="mh-dash mh-dash--manager">
 
-    <!-- Welcome banner -->
-    <div class="mh-dash-banner">
-        <div>
-            <p class="mh-dash-banner__title">
-                Welcome back, {{ current_user.full_name or current_user.email }} &#128075;
-            </p>
-            <p class="mh-dash-banner__sub">
-                Here's what's happening on the shop floor today.
-            </p>
+    <header class="mh-dash-banner">
+        <div class="mh-dash-banner__inner w-100">
+            <div>
+                <p class="mh-dash-banner__eyebrow">Operations</p>
+                <h1 class="mh-dash-banner__title">
+                    Welcome back, {{ current_user.full_name or current_user.email }}
+                </h1>
+                <p class="mh-dash-banner__sub">
+                    Monitor machines, inventory, and open work across the shop floor.
+                </p>
+            </div>
+            <span class="mh-dash-banner__role">
+                <i class="bi bi-building" aria-hidden="true"></i>
+                Plant Manager
+            </span>
         </div>
-        <span class="mh-dash-banner__role">&#127970;&nbsp; Plant Manager</span>
-    </div>
+    </header>
 
-    <!-- Stat cards — placeholders until US-9 wires real queries -->
     <div class="mh-stat-grid">
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#9881;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Active Machines</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#128230;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Open Work Orders</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#128274;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Low Stock Items</span>
-        </div>
-        <div class="mh-stat">
-            <span class="mh-stat__icon">&#128295;</span>
-            <span class="mh-stat__value">—</span>
-            <span class="mh-stat__label">Maintenance Due</span>
-        </div>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--success"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.active_machines }}</span>
+            <span class="mh-stat__label">Active machines</span>
+            <span class="mh-stat__hint">Live snapshot</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--neutral"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.open_work_orders }}</span>
+            <span class="mh-stat__label">Open work orders</span>
+            <span class="mh-stat__hint">Excludes completed</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--danger"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.low_stock_items }}</span>
+            <span class="mh-stat__label">Low stock SKUs</span>
+            <span class="mh-stat__hint">At or below reorder level</span>
+        </article>
+        <article class="mh-stat">
+            <div class="mh-stat__head">
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--warning"><i class="bi bi-wrench-adjustable" aria-hidden="true"></i></span>
+            </div>
+            <span class="mh-stat__value">{{ stats.maintenance_due }}</span>
+            <span class="mh-stat__label">Maintenance due</span>
+            <span class="mh-stat__hint">Next 7 days or overdue</span>
+        </article>
     </div>
 
-    <!-- Two-column section -->
     <div class="mh-dash-grid mh-dash-grid--wide">
-
-        <!-- Quick actions -->
-        <div class="mh-card">
-            <h2 class="mh-card__title">Quick actions</h2>
+        <div class="mh-card mh-card--dash">
+            <h2 class="mh-card__title--dash">Shop floor</h2>
             <ul class="mh-action-list">
                 <li>
-                    <a href="#">
-                        <span class="mh-action-list__icon">&#9881;</span>
-                        Manage Machines
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                    <a href="{{ url_for('machine.list') }}">
+                        <span class="mh-action-list__icon"><i class="bi bi-cpu" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Manage machines</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
-                        <span class="mh-action-list__icon">&#128230;</span>
-                        Manage Materials
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                    <a href="{{ url_for('material.list') }}">
+                        <span class="mh-action-list__icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Manage materials</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
-                        <span class="mh-action-list__icon">&#128295;</span>
-                        Schedule Maintenance
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                    <a href="{{ url_for('machine.list') }}"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="left"
+                       data-bs-title="Maintenance scheduling UI is coming soon. Open machines to review the catalog and rules.">
+                        <span class="mh-action-list__icon"><i class="bi bi-tools" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Maintenance</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
-                        <span class="mh-action-list__icon">&#128200;</span>
-                        View Analytics
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                    <a href="{{ url_for('work_order.list') }}">
+                        <span class="mh-action-list__icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">All work orders</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('scheduling.gantt') }}">
+                        <span class="mh-action-list__icon"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Production schedule</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('profile.edit') }}">
-                        <span class="mh-action-list__icon">&#128100;</span>
-                        Edit My Profile
-                        <span class="mh-action-list__arrow">&#8250;</span>
+                        <span class="mh-action-list__icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__text">Edit profile</span>
+                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
             </ul>
         </div>
 
-        <!-- Account summary -->
-        <div class="mh-card">
-            <h2 class="mh-card__title">My account</h2>
-
-            <div style="text-align:center; padding:.75rem 0 1.25rem;">
-                <div style="
-          width:52px; height:52px; border-radius:50%;
-          background:var(--mh-primary);
-          display:inline-flex; align-items:center; justify-content:center;
-          font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:.6rem;">
-                    {{ (current_user.full_name or current_user.email)[0].upper() }}
-                </div>
-                <div style="font-weight:600; font-size:.95rem;">
-                    {{ current_user.full_name or '—' }}
-                </div>
-                <div style="font-size:.8rem; color:var(--mh-muted);">
-                    {{ current_user.email }}
-                </div>
+        <div class="mh-card mh-card--dash">
+            <h2 class="mh-card__title--dash">My account</h2>
+            <div class="mh-account-block">
+                <div class="mh-account-avatar">{{ (current_user.full_name or current_user.email)[0].upper() }}</div>
+                <div class="mh-account-name">{{ current_user.full_name or '—' }}</div>
+                <div class="mh-account-email">{{ current_user.email }}</div>
             </div>
-
             <div class="mh-info-row">
                 <span class="mh-info-row__label">Role</span>
                 <span class="mh-info-row__value">
@@ -130,19 +140,41 @@
                 </span>
             </div>
         </div>
-
     </div>
 
-    <!-- Analytics placeholder — will be replaced in US-9 -->
-    <div class="mh-card">
-        <h2 class="mh-card__title">Production analytics</h2>
-        <div class="mh-placeholder">
-            <div class="mh-placeholder__icon">&#128200;</div>
+    {% if stats.low_stock_items > 0 %}
+    <div class="mh-insight-strip" role="status">
+        <span class="mh-insight-strip__label">
+            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+            Inventory alert
+        </span>
+        <ul>
+            <li><strong>{{ stats.low_stock_items }}</strong> SKU(s) at or below reorder level.</li>
+            {% if low_stock_preview %}
+            <li>
+                {% for m in low_stock_preview %}
+                <code>{{ m.sku }}</code>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+                {% if stats.low_stock_items > low_stock_preview|length %}…{% endif %}
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <section class="mh-card mh-card--dash">
+        <h2 class="mh-card__title--dash">Production analytics</h2>
+        <div class="mh-placeholder" style="padding:1.25rem 0;">
+            <div class="mh-placeholder__icon"><i class="bi bi-bar-chart-line" style="font-size:2rem;opacity:.55;"></i></div>
             <p class="mh-placeholder__text">
-                Charts and KPI reports will appear here in US-9 (Production Analytics Dashboard).
+                Charts and KPI reports can plug in here when analytics stories are implemented.
             </p>
+            <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--outline" style="margin-top:.65rem;">
+                <i class="bi bi-table me-1" aria-hidden="true"></i>
+                Browse work order data
+            </a>
         </div>
-    </div>
+    </section>
 
 </div>
 {% endblock %}
