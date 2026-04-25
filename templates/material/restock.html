@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Restock {{ material.sku }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:520px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Restock Material</h1>
+            <p class="mh-page-header__sub">{{ material.sku }} — {{ material.name }}</p>
+        </div>
+        <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <div class="mh-info-row" style="margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--mh-border);">
+            <span class="mh-info-row__label">Current Stock</span>
+            <span class="mh-info-row__value" style="font-weight:600;">
+                {{ material.current_stock }} {{ material.unit.value }}
+            </span>
+        </div>
+
+        <form method="POST" novalidate id="restock-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-group">
+                {{ form.qty.label(class="mh-label") }}
+                {{ form.qty(
+                    class="mh-input" + (" is-invalid" if form.qty.errors else ""),
+                    placeholder="Enter quantity to add",
+                    autofocus=true
+                ) }}
+                <p class="mh-field-hint">Amount to add ({{ material.unit.value }})</p>
+                {% for e in form.qty.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.supplier.label(class="mh-label") }}
+                {{ form.supplier(
+                    class="mh-input" + (" is-invalid" if form.supplier.errors else ""),
+                    placeholder="e.g. ABC Supplies Ltd."
+                ) }}
+                <p class="mh-field-hint">Supplier or source for this restock</p>
+                {% for e in form.supplier.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="restock-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">&#43; Restock</span>
+                </button>
+                <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('restock-form').addEventListener('submit', function () {
+        const btn = document.getElementById('restock-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ SRS RBAC:
 """
 
 from flask import flash, redirect, render_template, request, url_for
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
 from decorators.rbac import requires_role
 from services.machine_service import (
@@ -41,6 +41,8 @@ def create():
             type_str=form.type.data,
             capacity_per_hour=form.capacity_per_hour.data,
             status_str=form.status.data,
+            user_id=current_user.id,
+            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
         if success:
@@ -73,6 +75,8 @@ def edit(machine_pk):
             type_str=form.type.data,
             capacity_per_hour=form.capacity_per_hour.data,
             status_str=form.status.data,
+            user_id=current_user.id,
+            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
         if success:
@@ -87,6 +91,6 @@ def edit(machine_pk):
 @login_required
 @requires_role("MANAGER")
 def delete(machine_pk):
-    success, message = delete_machine(machine_pk)
+    success, message = delete_machine(machine_pk, user_id=current_user.id, ip_address=request.remote_addr)
     flash(message, "success" if success else "danger")
     return redirect(url_for("machine.list"))

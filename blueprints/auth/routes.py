@@ -61,6 +61,19 @@ def login():
         )
         if success:
             login_user(user)
+            # US-10: Audit log for successful login
+            from services.audit_service import log_audit
+            from models.audit import AuditAction
+            from models.base import db
+            log_audit(
+                action=AuditAction.USER_LOGIN,
+                user_id=user.id,
+                ip_address=request.remote_addr,
+                entity_type="User",
+                entity_id=user.id,
+                new_values={"email": user.email, "result": "success"},
+            )
+            db.session.commit()
             # Open-redirect hardening: only allow same-site relative paths
             next_page = request.args.get("next")
             if next_page and next_page.startswith("/") and not next_page.startswith("//"):

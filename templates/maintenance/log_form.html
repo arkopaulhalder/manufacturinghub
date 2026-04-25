@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Log Maintenance — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:580px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Log Maintenance</h1>
+            <p class="mh-page-header__sub">
+                {{ rule.machine.machine_id }} — {{ rule.machine.name }}
+            </p>
+        </div>
+        <a href="{{ url_for('maintenance.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <div class="mh-info-row" style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid var(--mh-border);">
+            <span class="mh-info-row__label">Rule</span>
+            <span class="mh-info-row__value">
+                Every {{ rule.interval_value }}
+                {% if rule.frequency.value == 'DATE_BASED' %}days{% else %}hours{% endif %}
+            </span>
+        </div>
+        <div class="mh-info-row" style="margin-bottom:1.25rem;">
+            <span class="mh-info-row__label">Current Next Due</span>
+            <span class="mh-info-row__value" style="font-weight:600;">
+                {{ rule.next_due_date.strftime('%d %b %Y, %H:%M') if rule.next_due_date else '—' }}
+            </span>
+        </div>
+
+        <form method="POST" novalidate id="log-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-group">
+                {{ form.date.label(class="mh-label") }}
+                {{ form.date(
+                    class="mh-input" + (" is-invalid" if form.date.errors else "")
+                ) }}
+                <p class="mh-field-hint">When was maintenance completed?</p>
+                {% for e in form.date.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.performed_by.label(class="mh-label") }}
+                {{ form.performed_by(
+                    class="mh-input" + (" is-invalid" if form.performed_by.errors else ""),
+                    placeholder="e.g. John Smith, Maintenance Team A"
+                ) }}
+                {% for e in form.performed_by.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.notes.label(class="mh-label") }}
+                {{ form.notes(
+                    class="mh-input",
+                    rows=3,
+                    placeholder="Replaced filters, checked oil levels, calibrated sensors..."
+                ) }}
+                {% for e in form.notes.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="log-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">Log Maintenance</span>
+                </button>
+                <a href="{{ url_for('maintenance.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('log-form').addEventListener('submit', function () {
+        const btn = document.getElementById('log-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

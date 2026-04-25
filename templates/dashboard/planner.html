@@ -16,7 +16,9 @@
                 </p>
             </div>
             <span class="mh-dash-banner__role">
-                <i class="bi bi-kanban" aria-hidden="true"></i>
+                <svg class="mh-icon mh-icon--sm" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1 2v14h14V5H5zm2 2h4v4H7V7zm0 6h4v4H7v-4zm6-6h4v10h-4V7z"/>
+                </svg>
                 Production Planner
             </span>
         </div>
@@ -24,11 +26,15 @@
 
     <div class="mh-dash-cta">
         <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <svg class="mh-icon mh-icon--sm" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/>
+            </svg>
             New work order
         </a>
         <a href="{{ url_for('scheduling.gantt') }}" class="mh-btn mh-btn--outline">
-            <i class="bi bi-calendar3" aria-hidden="true"></i>
+            <svg class="mh-icon mh-icon--sm" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 15H5V10h14v9z"/>
+            </svg>
             Open schedule
         </a>
     </div>
@@ -36,35 +42,63 @@
     <div class="mh-stat-grid">
         <article class="mh-stat">
             <div class="mh-stat__head">
-                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--neutral"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--neutral">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M6 2h12v2h-1v3.17a4 4 0 0 1-1.17 2.83L13.66 12l2.17 1.99A4 4 0 0 1 17 16.82V20h1v2H6v-2h1v-3.18a4 4 0 0 1 1.17-2.83L10.34 12 8.17 10.01A4 4 0 0 1 7 7.18V4H6V2zm3 2v3.18c0 .53.21 1.04.59 1.41L12 11l2.41-2.41c.38-.37.59-.88.59-1.41V4H9zm3 8-2.41 2.41A2 2 0 0 0 9 15.82V20h6v-4.18a2 2 0 0 0-.59-1.41L12 12z"/>
+                    </svg>
+                </span>
             </div>
             <span class="mh-stat__value">{{ stats.pending }}</span>
             <span class="mh-stat__label">Pending</span>
             <span class="mh-stat__hint">Live snapshot</span>
+            <span class="mh-stat__meta {% if stats.pending > 0 %}is-warn{% else %}is-good{% endif %}">
+                {% if stats.pending > 0 %}Needs scheduling{% else %}No pending backlog{% endif %}
+            </span>
         </article>
         <article class="mh-stat">
             <div class="mh-stat__head">
-                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--slate"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--slate">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 15H5V10h14v9zm-8.71-2.29L7.7 14.12l1.41-1.41 1.18 1.17 3.6-3.59 1.41 1.41-5.01 5.01z"/>
+                    </svg>
+                </span>
             </div>
             <span class="mh-stat__value">{{ stats.scheduled }}</span>
             <span class="mh-stat__label">Scheduled</span>
             <span class="mh-stat__hint">Live snapshot</span>
+            <span class="mh-stat__meta is-neutral">
+                {% if stats.scheduled > 0 %}Plan in place{% else %}No scheduled orders{% endif %}
+            </span>
         </article>
         <article class="mh-stat">
             <div class="mh-stat__head">
-                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--warning"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--warning">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-2 14.5v-9l7 4.5-7 4.5z"/>
+                    </svg>
+                </span>
             </div>
             <span class="mh-stat__value">{{ stats.in_progress }}</span>
             <span class="mh-stat__label">In progress</span>
             <span class="mh-stat__hint">Live snapshot</span>
+            <span class="mh-stat__meta {% if stats.in_progress > 0 %}is-good{% else %}is-neutral{% endif %}">
+                {% if stats.in_progress > 0 %}Execution active{% else %}No active execution{% endif %}
+            </span>
         </article>
         <article class="mh-stat">
             <div class="mh-stat__head">
-                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--success"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                <span class="mh-stat__icon-wrap mh-stat__icon-wrap--success">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1.2 14.6-4.1-4.1 1.4-1.4 2.7 2.7 5.1-5.1 1.4 1.4-6.5 6.5z"/>
+                    </svg>
+                </span>
             </div>
             <span class="mh-stat__value">{{ stats.completed_today }}</span>
             <span class="mh-stat__label">Completed today</span>
             <span class="mh-stat__hint">Updated today (UTC)</span>
+            <span class="mh-stat__meta {% if stats.completed_today > 0 %}is-good{% else %}is-neutral{% endif %}">
+                {% if stats.completed_today > 0 %}Output delivered{% else %}No completions today{% endif %}
+            </span>
         </article>
     </div>
 
@@ -74,37 +108,77 @@
             <ul class="mh-action-list">
                 <li>
                     <a href="{{ url_for('work_order.create') }}">
-                        <span class="mh-action-list__icon"><i class="bi bi-clipboard-plus" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__icon">
+                            <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M16 4h-1.18A3 3 0 0 0 12 2a3 3 0 0 0-2.82 2H8a2 2 0 0 0-2 2v14h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-4-1a1 1 0 0 1 1 1h-2a1 1 0 0 1 1-1zm1 11h3v2h-3v3h-2v-3H8v-2h3V9h2v5z"/>
+                            </svg>
+                        </span>
                         <span class="mh-action-list__text">Create work order</span>
-                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                        <span class="mh-action-list__arrow" aria-hidden="true">
+                            <svg class="mh-icon mh-icon--xs" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m9.29 6.71 1.42-1.42L17.41 12l-6.7 6.71-1.42-1.42L14.59 12z"/>
+                            </svg>
+                        </span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('scheduling.gantt') }}">
-                        <span class="mh-action-list__icon"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__icon">
+                            <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 15H5V10h14v9z"/>
+                            </svg>
+                        </span>
                         <span class="mh-action-list__text">Production schedule</span>
-                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                        <span class="mh-action-list__arrow" aria-hidden="true">
+                            <svg class="mh-icon mh-icon--xs" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m9.29 6.71 1.42-1.42L17.41 12l-6.7 6.71-1.42-1.42L14.59 12z"/>
+                            </svg>
+                        </span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('work_order.list') }}">
-                        <span class="mh-action-list__icon"><i class="bi bi-list-task" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__icon">
+                            <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M3 6h2v2H3V6zm4 0h14v2H7V6zm-4 5h2v2H3v-2zm4 0h14v2H7v-2zm-4 5h2v2H3v-2zm4 0h14v2H7v-2z"/>
+                            </svg>
+                        </span>
                         <span class="mh-action-list__text">My work orders</span>
-                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                        <span class="mh-action-list__arrow" aria-hidden="true">
+                            <svg class="mh-icon mh-icon--xs" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m9.29 6.71 1.42-1.42L17.41 12l-6.7 6.71-1.42-1.42L14.59 12z"/>
+                            </svg>
+                        </span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('material.list') }}">
-                        <span class="mh-action-list__icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__icon">
+                            <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m21 8-9-5-9 5v8l9 5 9-5V8zm-9-2.7L17.74 8 12 10.7 6.26 8 12 5.3zM5 9.6l6 2.9v6.2l-6-3.3V9.6zm14 5.8-6 3.3v-6.2l6-2.9v5.8z"/>
+                            </svg>
+                        </span>
                         <span class="mh-action-list__text">Material stock</span>
-                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                        <span class="mh-action-list__arrow" aria-hidden="true">
+                            <svg class="mh-icon mh-icon--xs" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m9.29 6.71 1.42-1.42L17.41 12l-6.7 6.71-1.42-1.42L14.59 12z"/>
+                            </svg>
+                        </span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ url_for('profile.edit') }}">
-                        <span class="mh-action-list__icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                        <span class="mh-action-list__icon">
+                            <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.33 0-10 1.67-10 5v2h11.5a5.5 5.5 0 0 1 7.19-5.23A8.58 8.58 0 0 0 12 14zm9.43 4.85-.77-.44.07-.88-1.2-.69-.66.58-.82-.3-.16-.87h-1.38l-.16.87-.82.3-.66-.58-1.2.69.07.88-.77.44v1.38l.77.44-.07.88 1.2.69.66-.58.82.3.16.87h1.38l.16-.87.82-.3.66.58 1.2-.69-.07-.88.77-.44v-1.38z"/>
+                            </svg>
+                        </span>
                         <span class="mh-action-list__text">Edit profile</span>
-                        <span class="mh-action-list__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                        <span class="mh-action-list__arrow" aria-hidden="true">
+                            <svg class="mh-icon mh-icon--xs" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m9.29 6.71 1.42-1.42L17.41 12l-6.7 6.71-1.42-1.42L14.59 12z"/>
+                            </svg>
+                        </span>
                     </a>
                 </li>
             </ul>
@@ -188,7 +262,11 @@
         </div>
         {% else %}
         <div class="mh-placeholder" style="padding:1.5rem 0;">
-            <div class="mh-placeholder__icon"><i class="bi bi-inbox" style="font-size:2rem;opacity:.6;"></i></div>
+            <div class="mh-placeholder__icon">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:2rem;height:2rem;opacity:.6;">
+                    <path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14h18V5a2 2 0 0 0-2-2zm0 9h-4a3 3 0 0 1-6 0H5V5h14v7z"/>
+                </svg>
+            </div>
             <p class="mh-placeholder__text">No work orders yet. Create your first one to see it here.</p>
             <a href="{{ url_for('work_order.create') }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">Create work order</a>
         </div>

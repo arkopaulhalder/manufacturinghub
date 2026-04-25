@@ -200,5 +200,7 @@ def reset_password(token: str, new_password: str) -> tuple[bool, str]:
     user.password_hash = _hash_password_bcrypt(new_password)
     user.reset_token = None
     user.reset_token_expires = None
+    user.login_attempt_count = 0
+    user.login_lockout_until = None
     db.session.commit()
     return True, "Password updated successfully."

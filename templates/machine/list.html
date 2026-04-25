@@ -3,6 +3,17 @@
 
 {% block content %}
 <div class="mh-page mh-page--wide">
+    {% set stats = namespace(active=0, maintenance=0, offline=0, capacity=0) %}
+    {% for m in machines %}
+        {% if m.status.value == 'ACTIVE' %}
+            {% set stats.active = stats.active + 1 %}
+        {% elif m.status.value == 'MAINTENANCE' %}
+            {% set stats.maintenance = stats.maintenance + 1 %}
+        {% else %}
+            {% set stats.offline = stats.offline + 1 %}
+        {% endif %}
+        {% set stats.capacity = stats.capacity + (m.capacity_per_hour|float) %}
+    {% endfor %}
 
     <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
         <div>
@@ -16,30 +27,53 @@
         {% endif %}
     </div>
 
+    <section class="mh-machine-insights">
+        <div class="mh-machine-insights__item">
+            <span class="mh-machine-insights__label">Total machines</span>
+            <span class="mh-machine-insights__value">{{ machines|length }}</span>
+        </div>
+        <div class="mh-machine-insights__item">
+            <span class="mh-machine-insights__label">Active</span>
+            <span class="mh-machine-insights__value">{{ stats.active }}</span>
+        </div>
+        <div class="mh-machine-insights__item">
+            <span class="mh-machine-insights__label">In maintenance</span>
+            <span class="mh-machine-insights__value">{{ stats.maintenance }}</span>
+        </div>
+        <div class="mh-machine-insights__item">
+            <span class="mh-machine-insights__label">Offline</span>
+            <span class="mh-machine-insights__value">{{ stats.offline }}</span>
+        </div>
+        <div class="mh-machine-insights__item">
+            <span class="mh-machine-insights__label">Total capacity/hr</span>
+            <span class="mh-machine-insights__value">{{ "%.2f"|format(stats.capacity) }}</span>
+        </div>
+    </section>
+
     <div class="mh-card mh-card--schedule">
         {% if machines %}
-        <div class="table-responsive mh-schedule-table-wrap">
-            <table class="table table-hover mh-schedule-table align-middle mb-0">
+        <div class="table-responsive mh-schedule-table-wrap mh-machine-table-wrap">
+            <table class="table table-hover mh-schedule-table mh-machine-table align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col" class="text-nowrap">Machine ID</th>
+                        <th scope="col">Machine ID</th>
                         <th scope="col">Name</th>
-                        <th scope="col" class="text-nowrap">Type</th>
-                        <th scope="col" class="text-end text-nowrap">Capacity / hr</th>
-                        <th scope="col" class="text-nowrap">Status</th>
+                        <th scope="col">Type</th>
+                        <th scope="col" class="text-end">Capacity / hr</th>
+                        <th scope="col">Status</th>
                         {% if current_user.role.value == 'MANAGER' %}
-                        <th scope="col" class="text-nowrap text-end">Actions</th>
+                        <th scope="col" class="text-end">Actions</th>
                         {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for m in machines %}
                     <tr>
-                        <td class="text-nowrap"><code class="small">{{ m.machine_id }}</code></td>
+                        <td><code class="small">{{ m.machine_id }}</code></td>
                         <td class="mh-schedule-cell--product">{{ m.name }}</td>
-                        <td class="text-nowrap">{{ m.type.value }}</td>
-                        <td class="text-end text-nowrap font-monospace small">{{ m.capacity_per_hour }}</td>
-                        <td class="text-nowrap">
+                        <td>{{ m.type.value }}</td>
+                        <td class="text-end font-monospace small">{{ m.capacity_per_hour }}</td>
+                        <td>
                             {% if m.status.value == 'ACTIVE' %}
                             <span class="badge rounded-pill mh-badge mh-badge--active">Active</span>
                             {% elif m.status.value == 'MAINTENANCE' %}
@@ -49,8 +83,8 @@
                             {% endif %}
                         </td>
                         {% if current_user.role.value == 'MANAGER' %}
-                        <td class="text-end text-nowrap">
-                            <div class="d-inline-flex flex-nowrap gap-1 align-items-center justify-content-end">
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1 align-items-center justify-content-end mh-machine-actions">
                                 <a href="{{ url_for('machine.edit', machine_pk=m.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">Edit</a>
                                 <form method="POST" action="{{ url_for('machine.delete', machine_pk=m.id) }}" class="d-inline"
                                     onsubmit="return confirm('Delete machine {{ m.machine_id }}?')">

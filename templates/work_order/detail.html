@@ -22,10 +22,26 @@
             </form>
             {% endif %}
             {% if current_user.role.value == 'PLANNER' and wo.status.value == 'SCHEDULED' %}
+            <form method="POST" action="{{ url_for('scheduling.start', wo_id=wo.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="mh-btn mh-btn--primary"
+                    onclick="return confirm('Start this work order? This will consume materials from inventory.')">
+                    &#9654;&nbsp; Start
+                </button>
+            </form>
             <form method="POST" action="{{ url_for('scheduling.unschedule', wo_id=wo.id) }}"
                 onsubmit="return confirm('Unschedule this order and revert to PENDING?')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="mh-btn mh-btn--outline">&#8634;&nbsp; Unschedule</button>
+            </form>
+            {% endif %}
+            {% if current_user.role.value == 'PLANNER' and wo.status.value == 'IN_PROGRESS' %}
+            <form method="POST" action="{{ url_for('scheduling.complete', wo_id=wo.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="mh-btn mh-btn--primary"
+                    onclick="return confirm('Mark this work order as completed?')">
+                    &#10003;&nbsp; Complete
+                </button>
             </form>
             {% endif %}
             <a href="{{ url_for('work_order.list') }}" class="mh-btn mh-btn--ghost">

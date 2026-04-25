@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% block title %}Production Analytics — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page mh-page--wide mh-analytics">
+
+    <!-- Header -->
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+        <div>
+            <h1 class="mh-page-header__title">
+                <svg class="mh-icon mh-icon--sm me-2" viewBox="0 0 24 24" style="opacity:.75;" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M5 9h3v10H5V9zm5-4h3v14h-3V5zm5 7h3v7h-3v-7zM3 21h18v-2H3v2z"/>
+                </svg>Production Analytics
+            </h1>
+            <p class="mh-page-header__sub mb-0">
+                Last 30 days performance overview
+            </p>
+        </div>
+        <div class="d-flex gap-2 ms-sm-auto flex-wrap">
+            <a href="{{ url_for('dashboard.export_work_orders') }}" class="mh-btn mh-btn--outline">
+                <svg class="mh-icon mh-icon--sm me-1" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M5 20h14v-2H5v2zM12 2v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L11 14.17V2h1z"/>
+                </svg>Export Orders
+            </a>
+            <a href="{{ url_for('dashboard.export_inventory') }}" class="mh-btn mh-btn--outline">
+                <svg class="mh-icon mh-icon--sm me-1" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M5 20h14v-2H5v2zM12 2v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L11 14.17V2h1z"/>
+                </svg>Export Inventory
+            </a>
+            <a href="{{ url_for('dashboard.manager') }}" class="mh-btn mh-btn--ghost">
+                &#8592;&nbsp; Dashboard
+            </a>
+        </div>
+    </div>
+
+    <section class="mh-insight-strip">
+        <div class="mh-insight-strip__item">
+            <span class="mh-insight-strip__label">Production health</span>
+            <span class="mh-insight-strip__value">
+                {% if cards.completed_30d >= 10 %}
+                Stable throughput in last 30 days
+                {% elif cards.completed_30d >= 1 %}
+                Moderate throughput in last 30 days
+                {% else %}
+                No completed orders in last 30 days
+                {% endif %}
+            </span>
+        </div>
+        <div class="mh-insight-strip__item">
+            <span class="mh-insight-strip__label">Operational risk</span>
+            <span class="mh-insight-strip__value">
+                {% if cards.materials_below_reorder >= 5 %}
+                High (urgent material replenishment required)
+                {% elif cards.materials_below_reorder >= 1 %}
+                Medium (track low-stock materials)
+                {% else %}
+                Low (inventory levels healthy)
+                {% endif %}
+            </span>
+        </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <div class="mh-analytics-cards">
+        <article class="mh-acard">
+            <div class="mh-acard__icon mh-acard__icon--blue">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M16 4h-1.18A3 3 0 0 0 12 2a3 3 0 0 0-2.82 2H8a2 2 0 0 0-2 2v14h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-4-1a1 1 0 0 1 1 1h-2a1 1 0 0 1 1-1zm-2 8h2v6h-2v-6zm4 2h2v4h-2v-4z"/>
+                </svg>
+            </div>
+            <div class="mh-acard__body">
+                <span class="mh-acard__value">{{ cards.active_work_orders }}</span>
+                <span class="mh-acard__label">Active Orders</span>
+                <span class="mh-acard__meta {% if cards.active_work_orders > 10 %}is-warn{% else %}is-good{% endif %}">
+                    {% if cards.active_work_orders > 10 %}High load{% else %}Balanced load{% endif %}
+                </span>
+            </div>
+        </article>
+        <article class="mh-acard">
+            <div class="mh-acard__icon mh-acard__icon--amber">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M22.7 19.3 13.4 10a6 6 0 0 1-7.7-7.7l3.1 3.1 2.1-2.1-3.1-3.1A6 6 0 0 1 16 7.9l9.3 9.3-2.6 2.1zM2.8 21.2a2 2 0 0 1 0-2.8l6-6 2.8 2.8-6 6a2 2 0 0 1-2.8 0z"/>
+                </svg>
+            </div>
+            <div class="mh-acard__body">
+                <span class="mh-acard__value">{{ cards.machines_in_maintenance }}</span>
+                <span class="mh-acard__label">In Maintenance</span>
+                <span class="mh-acard__meta {% if cards.machines_in_maintenance > 0 %}is-warn{% else %}is-good{% endif %}">
+                    {% if cards.machines_in_maintenance > 0 %}Needs follow-up{% else %}All machines available{% endif %}
+                </span>
+            </div>
+        </article>
+        <article class="mh-acard">
+            <div class="mh-acard__icon mh-acard__icon--red">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                </svg>
+            </div>
+            <div class="mh-acard__body">
+                <span class="mh-acard__value">{{ cards.materials_below_reorder }}</span>
+                <span class="mh-acard__label">Below Reorder</span>
+                <span class="mh-acard__meta {% if cards.materials_below_reorder > 0 %}is-bad{% else %}is-good{% endif %}">
+                    {% if cards.materials_below_reorder > 0 %}Restock needed{% else %}Stock healthy{% endif %}
+                </span>
+            </div>
+        </article>
+        <article class="mh-acard">
+            <div class="mh-acard__icon mh-acard__icon--green">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1.2 14.6-4.1-4.1 1.4-1.4 2.7 2.7 5.1-5.1 1.4 1.4-6.5 6.5z"/>
+                </svg>
+            </div>
+            <div class="mh-acard__body">
+                <span class="mh-acard__value">{{ cards.completed_30d }}</span>
+                <span class="mh-acard__label">Completed (30d)</span>
+                <span class="mh-acard__meta {% if cards.completed_30d > 0 %}is-good{% else %}is-warn{% endif %}">
+                    {% if cards.completed_30d > 0 %}Output recorded{% else %}No completions{% endif %}
+                </span>
+            </div>
+        </article>
+    </div>
+
+    <!-- Charts row 1: Bar + Pie -->
+    <div class="mh-analytics-row">
+
+        <section class="mh-chart-card mh-chart-card--wide">
+            <div class="mh-chart-card__header">
+                <h2 class="mh-chart-card__title">
+                    <svg class="mh-icon mh-icon--sm me-2" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M5 9h3v10H5V9zm5-4h3v14h-3V5zm5 7h3v7h-3v-7zM3 21h18v-2H3v2z"/>
+                    </svg>Production Volume by Product
+                </h2>
+                <span class="mh-chart-card__hint">Last 30 days &middot; Completed orders</span>
+            </div>
+            <div class="mh-chart-card__insight" id="productionInsight">Loading production insights...</div>
+            <div class="mh-chart-card__body">
+                <canvas id="chartProductionVolume"></canvas>
+                <div class="mh-chart-empty" id="emptyProduction" style="display:none;">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14h18V5a2 2 0 0 0-2-2zm0 9h-4a3 3 0 0 1-6 0H5V5h14v7z"/>
+                    </svg>
+                    <p>No completed orders in the last 30 days</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mh-chart-card">
+            <div class="mh-chart-card__header">
+                <h2 class="mh-chart-card__title">
+                    <svg class="mh-icon mh-icon--sm me-2" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M11 2v10H1A10 10 0 0 1 11 2zm2 0a10 10 0 1 1-10 12h10V2z"/>
+                    </svg>Machine Utilization
+                </h2>
+                <span class="mh-chart-card__hint">Hours used vs. available (30d)</span>
+            </div>
+            <div class="mh-chart-card__insight" id="utilizationInsight">Loading utilization insights...</div>
+            <div class="mh-chart-card__body mh-chart-card__body--centered">
+                <canvas id="chartMachineUtil"></canvas>
+                <div class="mh-chart-empty" id="emptyUtilization" style="display:none;">
+                    <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M9 9h6v6H9V9zm11 2h-2V8a1 1 0 0 0-1-1h-3V5h-2v2h-2V5H8v2H5a1 1 0 0 0-1 1v3H2v2h2v2H2v2h2v3a1 1 0 0 0 1 1h3v2h2v-2h2v2h2v-2h3a1 1 0 0 0 1-1v-3h2v-2h-2v-2h2v-2z"/>
+                    </svg>
+                    <p>No machine data available</p>
+                </div>
+            </div>
+            <div class="mh-utilization-metrics" id="utilizationMetrics"></div>
+        </section>
+
+    </div>
+
+    <!-- Charts row 2: Full-width line chart -->
+    <section class="mh-chart-card mh-chart-card--full">
+        <div class="mh-chart-card__header">
+            <h2 class="mh-chart-card__title">
+                <svg class="mh-icon mh-icon--sm me-2" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M16 6h5v5h-2V9.41l-6.29 6.3-3-3L3 19.41 1.59 18l8-8 3 3L17.59 8H16V6z"/>
+                </svg>Inventory Turnover — Top 5 Materials
+            </h2>
+            <span class="mh-chart-card__hint">Daily consumption (OUT movements) &middot; Last 30 days</span>
+        </div>
+        <div class="mh-chart-card__insight" id="turnoverInsight">Loading inventory insights...</div>
+        <div class="mh-chart-card__body mh-chart-card__body--tall">
+            <canvas id="chartInventoryTurnover"></canvas>
+            <div class="mh-chart-empty" id="emptyTurnover" style="display:none;">
+                <svg class="mh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="m21 8-9-5-9 5v8l9 5 9-5V8zm-9-2.7L17.74 8 12 10.7 6.26 8 12 5.3zM5 9.6l6 2.9v6.2l-6-3.3V9.6zm14 5.8-6 3.3v-6.2l6-2.9v5.8z"/>
+                </svg>
+                <p>No material consumption data in the last 30 days</p>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const COLORS = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+        '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#6366f1'
+    ];
+    const COLORS_ALPHA = COLORS.map(c => c + '1a');
+
+    const CHART_DEFAULTS = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#4b5563',
+                    font: { family: "'Inter', system-ui, sans-serif", size: 12 },
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyleWidth: 10,
+                }
+            },
+            tooltip: {
+                backgroundColor: '#1f2937',
+                titleFont: { family: "'Inter', sans-serif", size: 13, weight: '600' },
+                bodyFont: { family: "'Inter', sans-serif", size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                displayColors: true,
+                boxPadding: 4,
+            }
+        }
+    };
+
+    function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    // ---- Bar chart: Production Volume ----
+    const prodData = {{ production_volume_json|safe }};
+    const prodCanvas = document.getElementById('chartProductionVolume');
+
+    if (prodData.labels.length === 0) {
+        prodCanvas.style.display = 'none';
+        document.getElementById('emptyProduction').style.display = 'flex';
+        setText('productionInsight', 'No production output captured in the selected period.');
+    } else {
+        const maxQty = Math.max(...prodData.data);
+        const maxIdx = prodData.data.indexOf(maxQty);
+        const topProduct = prodData.labels[maxIdx];
+        setText('productionInsight', `Top product: ${topProduct} (${maxQty} units).`);
+
+        new Chart(prodCanvas, {
+            type: 'bar',
+            data: {
+                labels: prodData.labels,
+                datasets: [{
+                    label: 'Units Produced',
+                    data: prodData.data,
+                    backgroundColor: COLORS.slice(0, prodData.labels.length).map(c => c + '33'),
+                    borderColor: COLORS.slice(0, prodData.labels.length),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    hoverBackgroundColor: COLORS.slice(0, prodData.labels.length).map(c => c + '55'),
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: {
+                    ...CHART_DEFAULTS.plugins,
+                    legend: { display: false },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#6b7280', font: { size: 11 } },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' },
+                        ticks: { color: '#6b7280', font: { size: 11 } },
+                        title: { display: true, text: 'Quantity', color: '#9ca3af', font: { size: 12 } },
+                    }
+                }
+            }
+        });
+    }
+
+    // ---- Pie/Doughnut chart: Machine Utilization ----
+    const utilData = {{ machine_util_json|safe }};
+    const utilCanvas = document.getElementById('chartMachineUtil');
+
+    if (utilData.labels.length === 0) {
+        utilCanvas.style.display = 'none';
+        document.getElementById('emptyUtilization').style.display = 'flex';
+        setText('utilizationInsight', 'No scheduled workload found for available machines.');
+        setText('utilizationMetrics', 'Used: 0 hrs | Available: 0 hrs');
+    } else {
+        const totalUsed = utilData.used.reduce((a, b) => a + b, 0);
+        const totalAvail = utilData.available.reduce((a, b) => a + b, 0);
+        const totalCapacity = totalUsed + totalAvail;
+        const utilPct = totalCapacity > 0 ? ((totalUsed / totalCapacity) * 100).toFixed(1) : '0.0';
+        setText('utilizationInsight', `Overall utilization is ${utilPct}% across ${utilData.labels.length} machines.`);
+        setText('utilizationMetrics', `Used: ${totalUsed.toFixed(1)} hrs | Available: ${totalAvail.toFixed(1)} hrs`);
+
+        new Chart(utilCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used Hours', 'Available Hours'],
+                datasets: [{
+                    data: [totalUsed, totalAvail],
+                    backgroundColor: ['#3b82f6', '#e5e7eb'],
+                    hoverBackgroundColor: ['#2563eb', '#d1d5db'],
+                    borderWidth: 0,
+                    spacing: 2,
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                cutout: '68%',
+                plugins: {
+                    ...CHART_DEFAULTS.plugins,
+                    legend: {
+                        ...CHART_DEFAULTS.plugins.legend,
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        ...CHART_DEFAULTS.plugins.tooltip,
+                        callbacks: {
+                            label: function (ctx) {
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                                return ctx.label + ': ' + ctx.raw + ' hrs (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'centerText',
+                afterDraw(chart) {
+                    const { ctx, width, height } = chart;
+                    const total = totalUsed + totalAvail;
+                    const pct = total > 0 ? ((totalUsed / total) * 100).toFixed(0) : 0;
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = "700 28px 'Inter', sans-serif";
+                    ctx.fillStyle = '#1f2937';
+                    ctx.fillText(pct + '%', width / 2, height / 2 - 6);
+                    ctx.font = "400 12px 'Inter', sans-serif";
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('Utilization', width / 2, height / 2 + 18);
+                    ctx.restore();
+                }
+            }]
+        });
+    }
+
+    // ---- Line chart: Inventory Turnover ----
+    const turnData = {{ inventory_turnover_json|safe }};
+    const turnCanvas = document.getElementById('chartInventoryTurnover');
+
+    if (turnData.datasets.length === 0) {
+        turnCanvas.style.display = 'none';
+        document.getElementById('emptyTurnover').style.display = 'flex';
+        setText('turnoverInsight', 'No material consumption detected in the selected period.');
+    } else {
+        const totals = turnData.datasets.map(ds => ({
+            label: ds.label,
+            total: ds.data.reduce((a, b) => a + b, 0),
+        }));
+        totals.sort((a, b) => b.total - a.total);
+        const top = totals[0];
+        setText('turnoverInsight', `Highest consumption: ${top.label} (${top.total.toFixed(1)} units).`);
+
+        const lineDatasets = turnData.datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: COLORS[i % COLORS.length],
+            backgroundColor: COLORS_ALPHA[i % COLORS_ALPHA.length],
+            fill: true,
+            tension: 0.35,
+            pointRadius: 2,
+            pointHoverRadius: 6,
+            pointBackgroundColor: COLORS[i % COLORS.length],
+            borderWidth: 2.5,
+        }));
+
+        new Chart(turnCanvas, {
+            type: 'line',
+            data: {
+                labels: turnData.labels,
+                datasets: lineDatasets,
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#6b7280',
+                            font: { size: 11 },
+                            maxTicksLimit: 15,
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' },
+                        ticks: { color: '#6b7280', font: { size: 11 } },
+                        title: { display: true, text: 'Qty Consumed', color: '#9ca3af', font: { size: 12 } },
+                    }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

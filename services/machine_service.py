@@ -41,6 +41,8 @@ def create_machine(
     type_str: str,
     capacity_per_hour: float,
     status_str: str = "ACTIVE",
+    user_id: int | None = None,
+    ip_address: str | None = None,
 ) -> tuple[bool, str]:
     """
     Add a new machine to the catalog.
@@ -78,6 +80,25 @@ def create_machine(
         status=m_status,
     )
     db.session.add(machine)
+    db.session.flush()
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MACHINE_CREATE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Machine",
+        entity_id=machine.id,
+        new_values={
+            "machine_id": machine_id,
+            "name": name.strip(),
+            "type": m_type.value,
+            "capacity_per_hour": capacity,
+            "status": m_status.value,
+        },
+    )
+
     db.session.commit()
     return True, f"Machine '{machine_id}' added successfully."
 
@@ -93,6 +114,8 @@ def update_machine(
     type_str: str,
     capacity_per_hour: float,
     status_str: str,
+    user_id: int | None = None,
+    ip_address: str | None = None,
 ) -> tuple[bool, str]:
     machine = db.session.get(Machine, machine_pk)
     if not machine:
@@ -122,11 +145,37 @@ def update_machine(
     except KeyError:
         return False, "Invalid status."
 
+    old_values = {
+        "machine_id": machine.machine_id,
+        "name": machine.name,
+        "type": machine.type.value,
+        "capacity_per_hour": float(machine.capacity_per_hour),
+        "status": machine.status.value,
+    }
+
     machine.machine_id       = machine_id
     machine.name             = name.strip()
     machine.type             = m_type
     machine.capacity_per_hour = capacity
     machine.status           = m_status
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MACHINE_UPDATE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Machine",
+        entity_id=machine_pk,
+        old_values=old_values,
+        new_values={
+            "machine_id": machine_id,
+            "name": name.strip(),
+            "type": m_type.value,
+            "capacity_per_hour": capacity,
+            "status": m_status.value,
+        },
+    )
 
     db.session.commit()
     return True, f"Machine '{machine_id}' updated successfully."
@@ -136,7 +185,7 @@ def update_machine(
 # Delete                                                              #
 # ------------------------------------------------------------------ #
 
-def delete_machine(machine_pk: int) -> tuple[bool, str]:
+def delete_machine(machine_pk: int, user_id: int | None = None, ip_address: str | None = None) -> tuple[bool, str]:
     machine = db.session.get(Machine, machine_pk)
     if not machine:
         return False, "Machine not found."
@@ -148,6 +197,21 @@ def delete_machine(machine_pk: int) -> tuple[bool, str]:
             f"Cannot delete — this machine is linked to {ref_count} work order(s). "
             "Reassign or archive those orders first."
         )
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MACHINE_DELETE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Machine",
+        entity_id=machine_pk,
+        old_values={
+            "machine_id": machine.machine_id,
+            "name": machine.name,
+            "type": machine.type.value,
+        },
+    )
 
     db.session.delete(machine)
     db.session.commit()

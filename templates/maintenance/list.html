@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Rules — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page mh-page--wide">
+
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+        <div>
+            <h1 class="mh-page-header__title">Maintenance Rules</h1>
+            <p class="mh-page-header__sub mb-0">{{ rules|length }} rule(s) configured</p>
+        </div>
+        <a href="{{ url_for('maintenance.create') }}" class="mh-btn mh-btn--primary ms-sm-auto">
+            &#43;&nbsp; Add Rule
+        </a>
+    </div>
+
+    <div class="mh-card mh-card--schedule">
+        {% if rules %}
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Machine</th>
+                        <th scope="col" class="text-nowrap">Frequency</th>
+                        <th scope="col" class="text-nowrap text-end">Interval</th>
+                        <th scope="col" class="text-nowrap">Last Maintenance</th>
+                        <th scope="col" class="text-nowrap">Next Due</th>
+                        <th scope="col" class="text-nowrap">Status</th>
+                        <th scope="col" class="text-nowrap text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    {% set now = None %}
+                    {% set is_overdue = rule.next_due_date and rule.next_due_date <= now_utc %}
+                    {% set is_due_soon = rule.next_due_date and rule.next_due_date <= soon_utc %}
+                    <tr>
+                        <td class="text-nowrap">
+                            <code class="small">{{ rule.machine.machine_id }}</code>
+                            <span class="text-muted small d-block">{{ rule.machine.name }}</span>
+                        </td>
+                        <td class="text-nowrap">
+                            {% if rule.frequency.value == 'DATE_BASED' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--scheduled">Date-based</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--progress">Hours-based</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap font-monospace small">
+                            {{ rule.interval_value }}
+                            {% if rule.frequency.value == 'DATE_BASED' %}days{% else %}hrs{% endif %}
+                        </td>
+                        <td class="text-nowrap small">
+                            {{ rule.last_maintenance_date.strftime('%d %b %Y') if rule.last_maintenance_date else '—' }}
+                        </td>
+                        <td class="text-nowrap small">
+                            {% if rule.next_due_date %}
+                            {{ rule.next_due_date.strftime('%d %b %Y') }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap">
+                            {% if rule.next_due_date %}
+                                {% if rule.next_due_date <= now_utc %}
+                                <span class="badge rounded-pill mh-badge mh-badge--danger">Overdue</span>
+                                {% elif rule.next_due_date <= soon_utc %}
+                                <span class="badge rounded-pill mh-badge mh-badge--pending">Due Soon</span>
+                                {% else %}
+                                <span class="badge rounded-pill mh-badge mh-badge--active">OK</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <div class="d-inline-flex flex-nowrap gap-1 align-items-center justify-content-end">
+                                <a href="{{ url_for('maintenance.log', rule_id=rule.id) }}" class="mh-btn mh-btn--primary mh-btn--table" title="Log maintenance">Log</a>
+                                <a href="{{ url_for('maintenance.history', rule_id=rule.id) }}" class="mh-btn mh-btn--ghost mh-btn--table" title="View history">History</a>
+                                <a href="{{ url_for('maintenance.edit', rule_id=rule.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">Edit</a>
+                                <form method="POST" action="{{ url_for('maintenance.delete', rule_id=rule.id) }}" class="d-inline"
+                                    onsubmit="return confirm('Delete this maintenance rule?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="mh-btn mh-btn--danger mh-btn--table">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128736;</div>
+            <p class="mh-placeholder__text">No maintenance rules configured yet.</p>
+            <a href="{{ url_for('maintenance.create') }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">
+                Add First Rule
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -193,6 +193,14 @@ def schedule_work_order(
     if machine.status == MachineStatus.OFFLINE:
         return False, f"Machine {machine.machine_id} is OFFLINE and cannot be scheduled."
 
+    # US-7: Prevent scheduling on machines due for maintenance (within ±2 days grace)
+    from services.maintenance_service import is_machine_due_for_maintenance
+    if is_machine_due_for_maintenance(machine_pk):
+        return False, (
+            f"Machine {machine.machine_id} is due for maintenance (within 2 days). "
+            "Complete maintenance before scheduling new work orders."
+        )
+
     # --- Calculate end time ---
     estimated_hours = calculate_estimated_hours(
         float(wo.quantity),
@@ -210,12 +218,17 @@ def schedule_work_order(
         )
 
     # --- All checks passed — commit ---
+    old_status = wo.status.value
     wo.machine_id      = machine_pk
     wo.scheduled_start = scheduled_start
     wo.scheduled_end   = scheduled_end
     wo.estimated_hours = estimated_hours
     wo.status          = WorkOrderStatus.SCHEDULED
     wo.version        += 1  # optimistic locking increment
+
+    # US-8: Enqueue order status notification to planner
+    from services.notification_service import enqueue_order_status_notification
+    enqueue_order_status_notification(wo, old_status, wo.status.value)
 
     db.session.commit()
     return True, (
@@ -254,3 +267,87 @@ def unschedule_work_order(
 
     db.session.commit()
     return True, f"WO-{wo.id:04d} has been unscheduled and moved back to PENDING."
+
+
+# ------------------------------------------------------------------ #
+# US-6 — Start / Complete work order (with inventory consumption)     #
+# ------------------------------------------------------------------ #
+
+def start_work_order(
+    wo_id: int,
+    requesting_planner_id: int,
+) -> tuple[bool, str, list[dict]]:
+    """
+    Transition work order SCHEDULED → IN_PROGRESS.
+    Consumes all BOM materials from stock and creates OUT movements.
+
+    Returns (success, message, low_stock_alerts).
+
+    SRS US-6:
+      - Inventory consumed when work order → IN_PROGRESS
+      - All materials must have sufficient stock
+      - OUT movements logged with work_order_id
+    """
+    from services.inventory_service import consume_materials_for_work_order
+
+    wo = WorkOrder.query.filter_by(id=wo_id).with_for_update().first()
+
+    if not wo:
+        return False, "Work order not found.", []
+
+    if wo.planner_id != requesting_planner_id:
+        return False, "You can only start your own work orders.", []
+
+    if wo.status != WorkOrderStatus.SCHEDULED:
+        return False, f"Only SCHEDULED orders can be started. This order is {wo.status.value}.", []
+
+    success, message, alerts = consume_materials_for_work_order(wo)
+    if not success:
+        db.session.rollback()
+        return False, message, []
+
+    old_status = wo.status.value
+    wo.status   = WorkOrderStatus.IN_PROGRESS
+    wo.version += 1
+
+    # US-8: Enqueue order status notification to planner
+    from services.notification_service import enqueue_order_status_notification
+    enqueue_order_status_notification(wo, old_status, wo.status.value)
+
+    db.session.commit()
+
+    return True, f"WO-{wo.id:04d} is now IN PROGRESS. Materials consumed from inventory.", alerts
+
+
+def complete_work_order(
+    wo_id: int,
+    requesting_planner_id: int,
+) -> tuple[bool, str]:
+    """
+    Transition work order IN_PROGRESS → COMPLETED.
+
+    SRS US-6:
+      - Only IN_PROGRESS orders can be completed
+      - Materials already consumed on start
+    """
+    wo = WorkOrder.query.filter_by(id=wo_id).with_for_update().first()
+
+    if not wo:
+        return False, "Work order not found."
+
+    if wo.planner_id != requesting_planner_id:
+        return False, "You can only complete your own work orders."
+
+    if wo.status != WorkOrderStatus.IN_PROGRESS:
+        return False, f"Only IN_PROGRESS orders can be completed. This order is {wo.status.value}."
+
+    old_status = wo.status.value
+    wo.status   = WorkOrderStatus.COMPLETED
+    wo.version += 1
+
+    # US-8: Enqueue order status notification to planner
+    from services.notification_service import enqueue_order_status_notification
+    enqueue_order_status_notification(wo, old_status, wo.status.value)
+
+    db.session.commit()
+    return True, f"WO-{wo.id:04d} has been marked as COMPLETED."

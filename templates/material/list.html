@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="mh-page mh-page--wide">
+    {% set stats = namespace(low=0, healthy=0, inventory_value=0) %}
+    {% for m in materials %}
+        {% if m.current_stock <= m.reorder_level %}
+            {% set stats.low = stats.low + 1 %}
+        {% else %}
+            {% set stats.healthy = stats.healthy + 1 %}
+        {% endif %}
+        {% set stats.inventory_value = stats.inventory_value + ((m.current_stock|float) * (m.unit_cost|float)) %}
+    {% endfor %}
 
     <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
         <div>
@@ -16,52 +25,86 @@
         {% endif %}
     </div>
 
+    <section class="mh-material-insights">
+        <div class="mh-material-insights__item">
+            <span class="mh-material-insights__label">Catalog size</span>
+            <span class="mh-material-insights__value">{{ materials|length }} materials</span>
+        </div>
+        <div class="mh-material-insights__item">
+            <span class="mh-material-insights__label">Low stock risk</span>
+            <span class="mh-material-insights__value">{{ stats.low }} material(s)</span>
+        </div>
+        <div class="mh-material-insights__item">
+            <span class="mh-material-insights__label">Healthy stock</span>
+            <span class="mh-material-insights__value">{{ stats.healthy }} material(s)</span>
+        </div>
+        <div class="mh-material-insights__item">
+            <span class="mh-material-insights__label">Inventory value</span>
+            <span class="mh-material-insights__value">&#8377;{{ "{:,.2f}".format(stats.inventory_value) }}</span>
+        </div>
+    </section>
+
     <div class="mh-card mh-card--schedule">
         {% if materials %}
-        <div class="table-responsive mh-schedule-table-wrap">
-            <table class="table table-hover mh-schedule-table align-middle mb-0">
+        <div class="table-responsive mh-schedule-table-wrap mh-material-table-wrap">
+            <table class="table table-hover mh-schedule-table mh-material-table align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col" class="text-nowrap">SKU</th>
+                        <th scope="col">SKU</th>
                         <th scope="col">Name</th>
-                        <th scope="col" class="text-nowrap">Unit</th>
-                        <th scope="col" class="text-end text-nowrap">Current stock</th>
-                        <th scope="col" class="text-end text-nowrap">Reorder level</th>
-                        <th scope="col" class="text-end text-nowrap">Unit cost</th>
-                        <th scope="col" class="text-nowrap">Stock status</th>
-                        {% if current_user.role.value == 'MANAGER' %}
-                        <th scope="col" class="text-nowrap text-end">Actions</th>
-                        {% endif %}
+                        <th scope="col">Unit</th>
+                        <th scope="col" class="text-end">Current stock</th>
+                        <th scope="col" class="text-end">Reorder level</th>
+                        <th scope="col">Coverage</th>
+                        <th scope="col" class="text-end">Unit cost</th>
+                        <th scope="col">Stock status</th>
+                        <th scope="col" class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for m in materials %}
                     <tr>
-                        <td class="text-nowrap"><code class="small">{{ m.sku }}</code></td>
+                        <td><code class="small">{{ m.sku }}</code></td>
                         <td class="mh-schedule-cell--product">{{ m.name }}</td>
-                        <td class="text-nowrap">{{ m.unit.value }}</td>
-                        <td class="text-end text-nowrap font-monospace small">{{ m.current_stock }} {{ m.unit.value }}</td>
-                        <td class="text-end text-nowrap font-monospace small">{{ m.reorder_level }} {{ m.unit.value }}</td>
-                        <td class="text-end text-nowrap font-monospace small">&#8377;{{ "%.2f"|format(m.unit_cost|float) }}</td>
-                        <td class="text-nowrap">
+                        <td>{{ m.unit.value }}</td>
+                        <td class="text-end font-monospace small">{{ m.current_stock }} {{ m.unit.value }}</td>
+                        <td class="text-end font-monospace small">{{ m.reorder_level }} {{ m.unit.value }}</td>
+                        <td>
+                            {% if m.reorder_level|float > 0 %}
+                                {% set coverage = ((m.current_stock|float / m.reorder_level|float) * 100) %}
+                            {% else %}
+                                {% set coverage = 100 %}
+                            {% endif %}
+                            {% set coverage_clamped = 100 if coverage > 100 else (0 if coverage < 0 else coverage) %}
+                            <div class="mh-coverage">
+                                <div class="mh-coverage__bar">
+                                    <span style="width: {{ '%.0f'|format(coverage_clamped) }}%;"></span>
+                                </div>
+                                <small class="mh-coverage__text">{{ '%.0f'|format(coverage) }}%</small>
+                            </div>
+                        </td>
+                        <td class="text-end font-monospace small">&#8377;{{ "%.2f"|format(m.unit_cost|float) }}</td>
+                        <td>
                             {% if m.current_stock <= m.reorder_level %}
                             <span class="badge rounded-pill mh-badge mh-badge--danger">Low stock</span>
                             {% else %}
                             <span class="badge rounded-pill mh-badge mh-badge--active">OK</span>
                             {% endif %}
                         </td>
-                        {% if current_user.role.value == 'MANAGER' %}
-                        <td class="text-end text-nowrap">
-                            <div class="d-inline-flex flex-nowrap gap-1 align-items-center justify-content-end">
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1 align-items-center justify-content-end mh-material-actions">
+                                <a href="{{ url_for('material.movements', material_pk=m.id) }}" class="mh-btn mh-btn--ghost mh-btn--table" title="View history">History</a>
+                                {% if current_user.role.value == 'MANAGER' %}
+                                <a href="{{ url_for('material.restock', material_pk=m.id) }}" class="mh-btn mh-btn--outline mh-btn--table" title="Add stock">+Stock</a>
                                 <a href="{{ url_for('material.edit', material_pk=m.id) }}" class="mh-btn mh-btn--ghost mh-btn--table">Edit</a>
                                 <form method="POST" action="{{ url_for('material.delete', material_pk=m.id) }}" class="d-inline"
                                     onsubmit="return confirm('Delete material {{ m.sku }}?')">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="mh-btn mh-btn--danger mh-btn--table">Delete</button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
-                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

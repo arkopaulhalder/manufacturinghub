@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Maintenance History — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page mh-page--wide">
+
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+        <div>
+            <h1 class="mh-page-header__title">Maintenance History</h1>
+            <p class="mh-page-header__sub mb-0">
+                {{ rule.machine.machine_id }} — {{ rule.machine.name }}
+                <span class="text-muted ms-2">(Every {{ rule.interval_value }}
+                {% if rule.frequency.value == 'DATE_BASED' %}days{% else %}hours{% endif %})</span>
+            </p>
+        </div>
+        <div class="d-flex gap-2 ms-sm-auto">
+            <a href="{{ url_for('maintenance.log', rule_id=rule.id) }}" class="mh-btn mh-btn--primary">
+                &#43;&nbsp; Log Maintenance
+            </a>
+            <a href="{{ url_for('maintenance.list') }}" class="mh-btn mh-btn--ghost">
+                &#8592;&nbsp; Back
+            </a>
+        </div>
+    </div>
+
+    <div class="mh-card mh-card--schedule">
+        {% if logs %}
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Date</th>
+                        <th scope="col" class="text-nowrap">Performed By</th>
+                        <th scope="col">Notes</th>
+                        <th scope="col" class="text-nowrap">Logged At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-nowrap small">
+                            {{ log.date.strftime('%d %b %Y, %H:%M') }}
+                        </td>
+                        <td class="text-nowrap">
+                            <strong>{{ log.performed_by }}</strong>
+                        </td>
+                        <td class="small">
+                            {{ log.notes or '—' }}
+                        </td>
+                        <td class="text-nowrap small text-muted">
+                            {{ log.created_at.strftime('%d %b %Y, %H:%M') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128203;</div>
+            <p class="mh-placeholder__text">No maintenance logged for this rule yet.</p>
+            <a href="{{ url_for('maintenance.log', rule_id=rule.id) }}" class="mh-btn mh-btn--primary" style="margin-top:.75rem;">
+                Log First Maintenance
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

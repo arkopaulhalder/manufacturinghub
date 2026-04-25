@@ -119,6 +119,7 @@ def create():
             target_completion_date=form.target_completion_date.data,
             planner_id=current_user.id,
             bom_lines=bom_lines,
+            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
         if success:
@@ -182,6 +183,7 @@ def edit(wo_id):
             priority_str=form.priority.data,
             target_completion_date=form.target_completion_date.data,
             bom_lines=bom_lines,
+            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
         if success:

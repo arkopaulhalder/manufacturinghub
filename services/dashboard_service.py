@@ -5,7 +5,7 @@ Dashboard KPIs and short lists for Planner / Manager home views.
 from datetime import datetime, timedelta, timezone
 
 from models.machine import Machine, MachineStatus
-from models.maintenance import MaintenanceRule
+from models.maintenance import MaintenanceRule, MaintenanceFrequency
 from models.material import Material
 from models.work_order import WorkOrder, WorkOrderStatus
 
@@ -86,6 +86,25 @@ def get_manager_low_stock_preview(limit: int = 3) -> list[Material]:
             (Material.current_stock - Material.reorder_level).asc(),
             Material.sku.asc(),
         )
+        .limit(limit)
+        .all()
+    )
+
+
+def get_manager_upcoming_maintenance(limit: int = 5) -> list[MaintenanceRule]:
+    """
+    US-7: Return maintenance rules due within next 7 days (or overdue).
+    Sorted by next_due_date ascending (most urgent first).
+    """
+    now = datetime.now(timezone.utc)
+    horizon = now + timedelta(days=7)
+    return (
+        MaintenanceRule.query
+        .filter(
+            MaintenanceRule.next_due_date.isnot(None),
+            MaintenanceRule.next_due_date <= horizon,
+        )
+        .order_by(MaintenanceRule.next_due_date.asc())
         .limit(limit)
         .all()
     )

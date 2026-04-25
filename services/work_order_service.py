@@ -81,6 +81,7 @@ def create_work_order(
     target_completion_date,       # date or None
     planner_id: int,
     bom_lines: list[dict],        # [{"material_id": int, "required_qty": float}, ...]
+    ip_address: str | None = None,
 ) -> tuple[bool, str, WorkOrder | None]:
     """
     Create a new work order in PENDING status with its BOM.
@@ -142,6 +143,23 @@ def create_work_order(
         )
         db.session.add(bom)
 
+    # US-10: Audit log for work order creation
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.WORK_ORDER_CREATE,
+        user_id=planner_id,
+        ip_address=ip_address,
+        entity_type="WorkOrder",
+        entity_id=wo.id,
+        new_values={
+            "product_name": product_name,
+            "quantity": qty,
+            "priority": priority.value,
+            "bom_count": len(validated_bom),
+        },
+    )
+
     db.session.commit()
     return True, f"Work order WO-{wo.id:04d} created successfully.", wo
 
@@ -158,6 +176,7 @@ def update_work_order(
     priority_str: str,
     target_completion_date,
     bom_lines: list[dict],
+    ip_address: str | None = None,
 ) -> tuple[bool, str]:
     """
     Update a PENDING work order.
@@ -206,6 +225,12 @@ def update_work_order(
     if not validated_bom:
         return False, "At least one material must be added to the BOM."
 
+    old_values = {
+        "product_name": wo.product_name,
+        "quantity": float(wo.quantity),
+        "priority": wo.priority.value,
+    }
+
     wo.product_name           = product_name
     wo.quantity               = qty
     wo.priority               = priority
@@ -220,6 +245,24 @@ def update_work_order(
             required_qty=item["required_qty"],
         )
         db.session.add(bom)
+
+    # US-10: Audit log for work order update
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.WORK_ORDER_UPDATE,
+        user_id=requesting_planner_id,
+        ip_address=ip_address,
+        entity_type="WorkOrder",
+        entity_id=wo_id,
+        old_values=old_values,
+        new_values={
+            "product_name": product_name,
+            "quantity": qty,
+            "priority": priority.value,
+            "bom_count": len(validated_bom),
+        },
+    )
 
     db.session.commit()
     return True, f"Work order WO-{wo.id:04d} updated successfully."

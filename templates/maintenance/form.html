@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:580px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">{{ title }}</h1>
+            <p class="mh-page-header__sub">
+                {% if rule %}Machine: {{ rule.machine.machine_id }}{% else %}Define maintenance schedule for a machine{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('maintenance.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <form method="POST" novalidate id="rule-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-group">
+                {{ form.machine_id.label(class="mh-label") }}
+                {{ form.machine_id(
+                    class="mh-select" + (" is-invalid" if form.machine_id.errors else ""),
+                    disabled=rule is defined and rule
+                ) }}
+                {% if rule %}
+                <input type="hidden" name="machine_id" value="{{ rule.machine_id }}">
+                {% endif %}
+                {% for e in form.machine_id.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.frequency.label(class="mh-label") }}
+                {{ form.frequency(class="mh-select" + (" is-invalid" if form.frequency.errors else "")) }}
+                <p class="mh-field-hint">
+                    <strong>Date-based:</strong> Every N days. <strong>Hours-based:</strong> Every N runtime hours.
+                </p>
+                {% for e in form.frequency.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.interval_value.label(class="mh-label") }}
+                {{ form.interval_value(
+                    class="mh-input" + (" is-invalid" if form.interval_value.errors else ""),
+                    placeholder="e.g. 30 for days, 500 for hours"
+                ) }}
+                <p class="mh-field-hint">Minimum: 1 day or 10 hours depending on frequency type.</p>
+                {% for e in form.interval_value.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.last_maintenance_date.label(class="mh-label") }}
+                {{ form.last_maintenance_date(
+                    class="mh-input" + (" is-invalid" if form.last_maintenance_date.errors else "")
+                ) }}
+                <p class="mh-field-hint">Leave blank if unknown. Next due will be calculated from now.</p>
+                {% for e in form.last_maintenance_date.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="rule-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">{{ form.submit.label.text }}</span>
+                </button>
+                <a href="{{ url_for('maintenance.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('rule-form').addEventListener('submit', function () {
+        const btn = document.getElementById('rule-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

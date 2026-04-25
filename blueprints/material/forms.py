@@ -61,3 +61,45 @@ class MaterialForm(FlaskForm):
         places=2,
     )
     submit = SubmitField("Save Material")
+
+
+# ------------------------------------------------------------------ #
+# US-6 — Restock Form                                                 #
+# ------------------------------------------------------------------ #
+
+class RestockForm(FlaskForm):
+    """Form for restocking a material (IN movement)."""
+    qty = DecimalField(
+        "Quantity to Add",
+        validators=[
+            DataRequired(),
+            NumberRange(min=0.001, message="Quantity must be greater than zero."),
+        ],
+        places=3,
+    )
+    supplier = StringField(
+        "Supplier Name",
+        validators=[DataRequired(), Length(max=255)],
+        description="Name of supplier or source",
+    )
+    submit = SubmitField("Restock")
+
+
+# ------------------------------------------------------------------ #
+# US-6 — Adjustment Form                                              #
+# ------------------------------------------------------------------ #
+
+class AdjustForm(FlaskForm):
+    """Form for adjusting stock (ADJUST movement)."""
+    qty_delta = DecimalField(
+        "Quantity Delta",
+        validators=[DataRequired()],
+        places=3,
+        description="Positive to add, negative to remove",
+    )
+    reason = StringField(
+        "Reason",
+        validators=[DataRequired(), Length(max=500)],
+        description="Explain why this adjustment is needed",
+    )
+    submit = SubmitField("Apply Adjustment")

@@ -42,6 +42,8 @@ def create_material(
     current_stock: float,
     reorder_level: float,
     unit_cost: float,
+    user_id: int | None = None,
+    ip_address: str | None = None,
 ) -> tuple[bool, str]:
     """
     Add a new material to the catalog.
@@ -88,6 +90,26 @@ def create_material(
         unit_cost=cost,
     )
     db.session.add(material)
+    db.session.flush()
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MATERIAL_CREATE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Material",
+        entity_id=material.id,
+        new_values={
+            "sku": sku,
+            "name": name.strip(),
+            "unit": unit.value,
+            "current_stock": stock,
+            "reorder_level": reorder,
+            "unit_cost": cost,
+        },
+    )
+
     db.session.commit()
     return True, f"Material '{sku}' added successfully."
 
@@ -104,6 +126,8 @@ def update_material(
     current_stock: float,
     reorder_level: float,
     unit_cost: float,
+    user_id: int | None = None,
+    ip_address: str | None = None,
 ) -> tuple[bool, str]:
     material = db.session.get(Material, material_pk)
     if not material:
@@ -142,12 +166,40 @@ def update_material(
     except KeyError:
         return False, "Invalid unit."
 
+    old_values = {
+        "sku": material.sku,
+        "name": material.name,
+        "unit": material.unit.value,
+        "current_stock": float(material.current_stock),
+        "reorder_level": float(material.reorder_level),
+        "unit_cost": float(material.unit_cost),
+    }
+
     material.sku           = sku
     material.name          = name.strip()
     material.unit          = unit
     material.current_stock = stock
     material.reorder_level = reorder
     material.unit_cost     = cost
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MATERIAL_UPDATE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Material",
+        entity_id=material_pk,
+        old_values=old_values,
+        new_values={
+            "sku": sku,
+            "name": name.strip(),
+            "unit": unit.value,
+            "current_stock": stock,
+            "reorder_level": reorder,
+            "unit_cost": cost,
+        },
+    )
 
     db.session.commit()
     return True, f"Material '{sku}' updated successfully."
@@ -157,7 +209,7 @@ def update_material(
 # Delete                                                              #
 # ------------------------------------------------------------------ #
 
-def delete_material(material_pk: int) -> tuple[bool, str]:
+def delete_material(material_pk: int, user_id: int | None = None, ip_address: str | None = None) -> tuple[bool, str]:
     material = db.session.get(Material, material_pk)
     if not material:
         return False, "Material not found."
@@ -169,6 +221,21 @@ def delete_material(material_pk: int) -> tuple[bool, str]:
             f"Cannot delete — this material appears on {bom_ref} work order BOM line(s). "
             "Remove it from those orders first."
         )
+
+    from services.audit_service import log_audit
+    from models.audit import AuditAction
+    log_audit(
+        action=AuditAction.MATERIAL_DELETE,
+        user_id=user_id,
+        ip_address=ip_address,
+        entity_type="Material",
+        entity_id=material_pk,
+        old_values={
+            "sku": material.sku,
+            "name": material.name,
+            "unit": material.unit.value,
+        },
+    )
 
     db.session.delete(material)
     db.session.commit()

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ material.sku }} History — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page mh-page--wide">
+
+    <div class="mh-page-header flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+        <div>
+            <h1 class="mh-page-header__title">Inventory History</h1>
+            <p class="mh-page-header__sub mb-0">
+                {{ material.sku }} — {{ material.name }}
+                <span style="margin-left:.75rem; font-weight:600;">
+                    Current: {{ material.current_stock }} {{ material.unit.value }}
+                </span>
+            </p>
+        </div>
+        <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost ms-sm-auto">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card mh-card--schedule">
+        {% if movements %}
+        <div class="table-responsive mh-schedule-table-wrap">
+            <table class="table table-hover mh-schedule-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap">Date / Time</th>
+                        <th scope="col" class="text-nowrap">Type</th>
+                        <th scope="col" class="text-end text-nowrap">Quantity</th>
+                        <th scope="col">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mv in movements %}
+                    <tr>
+                        <td class="text-nowrap small">
+                            {{ mv.timestamp.strftime('%d %b %Y, %H:%M') }}
+                        </td>
+                        <td class="text-nowrap">
+                            {% if mv.type.value == 'IN' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--active">IN</span>
+                            {% elif mv.type.value == 'OUT' %}
+                            <span class="badge rounded-pill mh-badge mh-badge--danger">OUT</span>
+                            {% else %}
+                            <span class="badge rounded-pill mh-badge mh-badge--scheduled">ADJUST</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap font-monospace small">
+                            {% if mv.type.value == 'ADJUST' %}
+                                {% if mv.qty_delta and mv.qty_delta > 0 %}+{% endif %}{{ mv.qty_delta }} {{ material.unit.value }}
+                            {% elif mv.type.value == 'IN' %}
+                                +{{ mv.qty }} {{ material.unit.value }}
+                            {% else %}
+                                -{{ mv.qty }} {{ material.unit.value }}
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if mv.type.value == 'IN' %}
+                                Supplier: <strong>{{ mv.supplier }}</strong>
+                            {% elif mv.type.value == 'OUT' %}
+                                {% if mv.work_order %}
+                                    Consumed for
+                                    <a href="{{ url_for('work_order.detail', wo_id=mv.work_order_id) }}" class="text-decoration-none">
+                                        <strong>WO-{{ "%04d"|format(mv.work_order_id) }}</strong>
+                                    </a>
+                                    ({{ mv.work_order.product_name }})
+                                {% else %}
+                                    Work Order #{{ mv.work_order_id }}
+                                {% endif %}
+                            {% else %}
+                                Reason: {{ mv.reason or '—' }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="mh-placeholder">
+            <div class="mh-placeholder__icon">&#128203;</div>
+            <p class="mh-placeholder__text">No inventory movements recorded for this material yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

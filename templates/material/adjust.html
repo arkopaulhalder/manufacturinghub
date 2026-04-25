@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Adjust {{ material.sku }} — ManufacturingHub{% endblock %}
+
+{% block content %}
+<div class="mh-page" style="max-width:520px;">
+
+    <div class="mh-page-header">
+        <div>
+            <h1 class="mh-page-header__title">Adjust Stock</h1>
+            <p class="mh-page-header__sub">{{ material.sku }} — {{ material.name }}</p>
+        </div>
+        <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">
+            &#8592;&nbsp; Back
+        </a>
+    </div>
+
+    <div class="mh-card">
+        <div class="mh-info-row" style="margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--mh-border);">
+            <span class="mh-info-row__label">Current Stock</span>
+            <span class="mh-info-row__value" style="font-weight:600;">
+                {{ material.current_stock }} {{ material.unit.value }}
+            </span>
+        </div>
+
+        <form method="POST" novalidate id="adjust-form">
+            {{ form.hidden_tag() }}
+
+            <div class="mh-form-group">
+                {{ form.qty_delta.label(class="mh-label") }}
+                {{ form.qty_delta(
+                    class="mh-input" + (" is-invalid" if form.qty_delta.errors else ""),
+                    placeholder="e.g. 10 or -5",
+                    autofocus=true
+                ) }}
+                <p class="mh-field-hint">
+                    Positive value to <strong>add</strong>, negative to <strong>remove</strong> stock.
+                </p>
+                {% for e in form.qty_delta.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div class="mh-form-group">
+                {{ form.reason.label(class="mh-label") }}
+                {{ form.reason(
+                    class="mh-input" + (" is-invalid" if form.reason.errors else ""),
+                    placeholder="e.g. Inventory count correction, Damaged items removed"
+                ) }}
+                <p class="mh-field-hint">Brief explanation for the audit trail</p>
+                {% for e in form.reason.errors %}<p class="mh-field-error">{{ e }}</p>{% endfor %}
+            </div>
+
+            <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
+                <button type="submit" class="mh-btn mh-btn--primary" id="adjust-submit">
+                    <span class="mh-spinner"></span>
+                    <span class="mh-btn-text">Apply Adjustment</span>
+                </button>
+                <a href="{{ url_for('material.list') }}" class="mh-btn mh-btn--ghost">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('adjust-form').addEventListener('submit', function () {
+        const btn = document.getElementById('adjust-submit');
+        btn.classList.add('mh-btn--loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}
