@@ -1,7 +1,6 @@
-import json
 from datetime import datetime, timezone
 
-from flask import Response, render_template, redirect, url_for
+from flask import Response, jsonify, render_template, redirect, url_for
 from flask_login import current_user, login_required
 
 from decorators.rbac import requires_role
@@ -78,9 +77,25 @@ def analytics():
     return render_template(
         "dashboard/analytics.html",
         cards=cards,
-        production_volume_json=json.dumps(production_volume),
-        machine_util_json=json.dumps(machine_util),
-        inventory_turnover_json=json.dumps(inventory_turnover),
+    )
+
+
+@dashboard_bp.route("/analytics/data")
+@login_required
+@requires_role("MANAGER")
+def analytics_data():
+    from services.analytics_service import (
+        get_inventory_turnover,
+        get_machine_utilization,
+        get_production_volume_by_product,
+    )
+
+    return jsonify(
+        {
+            "production_volume": get_production_volume_by_product(days=30),
+            "machine_utilization": get_machine_utilization(),
+            "inventory_turnover": get_inventory_turnover(days=30, top_n=5),
+        }
     )
 
 
