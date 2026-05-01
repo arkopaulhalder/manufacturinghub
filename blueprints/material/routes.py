@@ -15,7 +15,7 @@ from services.material_service import (
     get_material_by_id, update_material,
 )
 from services.inventory_service import (
-    adjust_material, get_movements_for_material, restock_material,
+    adjust_stock, get_movements_for_material, restock_material,
 )
 from . import material_bp
 from .forms import AdjustForm, MaterialForm, RestockForm
@@ -117,21 +117,12 @@ def restock(material_pk):
     form = RestockForm()
 
     if form.validate_on_submit():
-        success, message, alert = restock_material(
-            material_pk=material_pk,
+        success, message = restock_material(
+            material_id=material_pk,
             qty=float(form.qty.data),
             supplier=form.supplier.data,
-            user_id=current_user.id,
-            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
-        if alert:
-            flash(
-                f"Low stock alert: {alert['sku']} — "
-                f"Stock: {alert['current_stock']} {alert['unit']}, "
-                f"Reorder level: {alert['reorder_level']} {alert['unit']}",
-                "warning"
-            )
         if success:
             return redirect(url_for("material.list"))
 
@@ -159,21 +150,12 @@ def adjust(material_pk):
     form = AdjustForm()
 
     if form.validate_on_submit():
-        success, message, alert = adjust_material(
-            material_pk=material_pk,
+        success, message = adjust_stock(
+            material_id=material_pk,
             qty_delta=float(form.qty_delta.data),
             reason=form.reason.data,
-            user_id=current_user.id,
-            ip_address=request.remote_addr,
         )
         flash(message, "success" if success else "danger")
-        if alert:
-            flash(
-                f"Low stock alert: {alert['sku']} — "
-                f"Stock: {alert['current_stock']} {alert['unit']}, "
-                f"Reorder level: {alert['reorder_level']} {alert['unit']}",
-                "warning"
-            )
         if success:
             return redirect(url_for("material.list"))
 

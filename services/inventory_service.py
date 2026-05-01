@@ -1,283 +1,261 @@
 """
 services/inventory_service.py
 
-US-6 — Inventory Consumption & Restocking business logic.
+US-6 — Inventory Consumption & Restocking.
 
 SRS acceptance criteria covered:
-  - Consume material when work order status → IN_PROGRESS
-  - Restock: IN movements with supplier, qty, timestamp
-  - Adjust: ADJUST movements with reason, qty_delta
-  - Log all movements in InventoryMovement table
-  - Trigger low-stock alert after any movement (current_stock < reorder_level)
-  - Prevent negative stock values (check before update)
+  Consume  → when work order status → IN_PROGRESS:
+               deduct required_qty from current_stock
+               log movement type=OUT, order_id, qty, timestamp
+  Restock  → Manager adds stock via Restock form:
+               log movement type=IN, supplier, qty, timestamp
+  Adjust   → Manager manually adjusts stock:
+               log movement type=ADJUST, reason, qty_delta
+  Alert    → after any movement, if current_stock < reorder_level
+               enqueue LOW_STOCK notification to manager
 
 SRS Don'ts:
-  - Do not allow negative stock
-  - Consumption requires work_order_id for OUT movements
+  - Do not allow negative stock values
+  - Do not allow consumption without an associated work order
+  - Do not auto-consume until order is IN_PROGRESS
 """
 
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
 
 from models.base import db
 from models.inventory import InventoryMovement, MovementType
 from models.material import Material
-from models.work_order import WorkOrder
+from models.work_order import WorkOrder, WorkOrderMaterial, WorkOrderStatus
 
 
-# ------------------------------------------------------------------ #
-# Read — Movement history                                             #
-# ------------------------------------------------------------------ #
+def _now():
+    return datetime.now(timezone.utc)
 
-def get_movements_for_material(material_pk: int, limit: int = 50) -> list[InventoryMovement]:
-    """Return recent inventory movements for a material, newest first."""
+# Read
+
+def get_movements_for_material(material_id: int) -> list:
     return (
         InventoryMovement.query
-        .filter_by(material_id=material_pk)
+        .filter_by(material_id=material_id)
         .order_by(InventoryMovement.timestamp.desc())
-        .limit(limit)
         .all()
     )
 
 
-def get_all_movements(limit: int = 100) -> list[InventoryMovement]:
-    """Return recent inventory movements across all materials."""
+def get_all_movements() -> list:
     return (
         InventoryMovement.query
         .order_by(InventoryMovement.timestamp.desc())
-        .limit(limit)
+        .limit(200)
         .all()
     )
 
 
-# ------------------------------------------------------------------ #
-# Low-stock alert helper                                              #
-# ------------------------------------------------------------------ #
+def get_low_stock_materials() -> list:
+    """Returns materials where current_stock <= reorder_level."""
+    return [
+        m for m in Material.query.all()
+        if float(m.current_stock) <= float(m.reorder_level)
+    ]
 
-def check_low_stock_alert(material: Material) -> dict | None:
+
+# US-6: Consume — triggered when SCHEDULED → IN_PROGRESS
+
+def start_production(wo_id: int, requesting_planner_id: int) -> tuple[bool, str]:
     """
-    After any movement, check if current_stock <= reorder_level.
-    Returns alert dict or None.
+    Transition a SCHEDULED work order to IN_PROGRESS.
+    Deducts all BOM required_qty from material current_stock.
+    Logs an OUT movement per material.
+    Alerts if any material drops below reorder_level.
+
+    SRS Don't: do not allow consumption without a work order.
+    SRS Don't: do not allow negative stock values.
     """
-    if float(material.current_stock) <= float(material.reorder_level):
-        return {
-            "material_id": material.id,
-            "sku": material.sku,
-            "name": material.name,
-            "current_stock": float(material.current_stock),
-            "reorder_level": float(material.reorder_level),
-            "unit": material.unit.value,
-        }
-    return None
+    wo = WorkOrder.query.filter_by(id=wo_id).with_for_update().first()
 
+    if not wo:
+        return False, "Work order not found."
 
-# ------------------------------------------------------------------ #
-# Consume — OUT movements when work order → IN_PROGRESS              #
-# ------------------------------------------------------------------ #
+    if wo.planner_id != requesting_planner_id:
+        return False, "You can only start your own work orders."
 
-def consume_materials_for_work_order(work_order: WorkOrder) -> tuple[bool, str, list[dict]]:
-    """
-    Deduct all BOM materials from stock and create OUT movements.
-    Called when work order transitions SCHEDULED → IN_PROGRESS.
+    if wo.status != WorkOrderStatus.SCHEDULED:
+        return False, f"Only SCHEDULED orders can be started. This order is {wo.status.value}."
 
-    Returns (success, message, low_stock_alerts).
+    # --- Pre-flight check: enough stock for all BOM lines? ---
+    shortfalls = []
+    for bom in wo.materials:
+        material = db.session.get(Material, bom.material_id)
+        if float(material.current_stock) < float(bom.required_qty):
+            shortfalls.append(
+                f"{material.name} (need {bom.required_qty}, have {material.current_stock})"
+            )
 
-    SRS constraints:
-      - All materials must have sufficient stock
-      - No negative stock allowed
-      - Each OUT movement links to work_order_id
-    """
-    if not work_order.materials:
-        return False, "Work order has no materials in BOM.", []
+    if shortfalls:
+        return False, (
+            "Insufficient stock to start production: " + "; ".join(shortfalls) +
+            ". Ask the manager to restock before starting."
+        )
 
-    alerts = []
+    # --- Consume each BOM material ---
+    for bom in wo.materials:
+        material = db.session.get(Material, bom.material_id)
 
-    for bom_line in work_order.materials:
-        material = bom_line.material
-        required_qty = Decimal(str(bom_line.required_qty))
-        current_stock = Decimal(str(material.current_stock))
-
-        if current_stock < required_qty:
-            return False, (
-                f"Insufficient stock for {material.sku} ({material.name}). "
-                f"Required: {required_qty} {material.unit.value}, "
-                f"Available: {current_stock} {material.unit.value}."
-            ), []
-
-    for bom_line in work_order.materials:
-        material = bom_line.material
-        required_qty = Decimal(str(bom_line.required_qty))
-
-        material.current_stock = Decimal(str(material.current_stock)) - required_qty
+        material.current_stock = float(material.current_stock) - float(bom.required_qty)
 
         movement = InventoryMovement(
-            material_id=material.id,
+            material_id=bom.material_id,
             type=MovementType.OUT,
-            qty=required_qty,
-            work_order_id=work_order.id,
-            timestamp=datetime.now(timezone.utc),
+            qty=float(bom.required_qty),
+            work_order_id=wo.id,
+            timestamp=_now(),
         )
         db.session.add(movement)
 
-        alert = check_low_stock_alert(material)
-        if alert:
-            alerts.append(alert)
-            # US-8: Enqueue low stock notifications to managers
-            from services.notification_service import enqueue_low_stock_alert
-            enqueue_low_stock_alert(material)
+        # Enqueue low-stock notification if needed
+        _check_and_enqueue_low_stock(material)
 
-    return True, "Materials consumed successfully.", alerts
-
-
-# ------------------------------------------------------------------ #
-# Restock — IN movements (Manager)                                    #
-# ------------------------------------------------------------------ #
-
-def restock_material(
-    material_pk: int,
-    qty: float,
-    supplier: str,
-    user_id: int | None = None,
-    ip_address: str | None = None,
-) -> tuple[bool, str, dict | None]:
-    """
-    Add stock to a material and create an IN movement.
-    Returns (success, message, low_stock_alert_or_None).
-
-    SRS acceptance:
-      - IN movement with supplier, qty, timestamp
-    """
-    material = db.session.get(Material, material_pk)
-    if not material:
-        return False, "Material not found.", None
-
-    try:
-        restock_qty = Decimal(str(qty))
-        if restock_qty <= 0:
-            raise ValueError
-    except (InvalidOperation, ValueError):
-        return False, "Restock quantity must be a positive number.", None
-
-    supplier = supplier.strip()
-    if not supplier:
-        return False, "Supplier name is required.", None
-
-    material.current_stock = Decimal(str(material.current_stock)) + restock_qty
-
-    movement = InventoryMovement(
-        material_id=material.id,
-        type=MovementType.IN,
-        qty=restock_qty,
-        supplier=supplier,
-        timestamp=datetime.now(timezone.utc),
-    )
-    db.session.add(movement)
-
-    # US-10: Audit log for restock
-    from services.audit_service import log_audit
-    from models.audit import AuditAction
-    log_audit(
-        action=AuditAction.INVENTORY_ADJUST,
-        user_id=user_id,
-        ip_address=ip_address,
-        entity_type="Material",
-        entity_id=material.id,
-        old_values={"current_stock": float(material.current_stock) - float(restock_qty)},
-        new_values={
-            "current_stock": float(material.current_stock),
-            "restock_qty": float(restock_qty),
-            "supplier": supplier,
-            "type": "IN",
-        },
-    )
-
+    wo.status   = WorkOrderStatus.IN_PROGRESS
+    wo.version += 1
     db.session.commit()
 
-    alert = check_low_stock_alert(material)
-    return True, (
-        f"Restocked {restock_qty} {material.unit.value} of {material.sku} from {supplier}."
-    ), alert
+    return True, f"WO-{wo.id:04d} is now IN PROGRESS. Inventory has been consumed."
 
+# US-6: Complete production
 
-# ------------------------------------------------------------------ #
-# Adjust — ADJUST movements (Manager)                                 #
-# ------------------------------------------------------------------ #
+def complete_production(wo_id: int, requesting_planner_id: int) -> tuple[bool, str]:
+    """Transition IN_PROGRESS → COMPLETED."""
+    wo = WorkOrder.query.filter_by(id=wo_id).with_for_update().first()
 
-def adjust_material(
-    material_pk: int,
-    qty_delta: float,
-    reason: str,
-    user_id: int | None = None,
-    ip_address: str | None = None,
-) -> tuple[bool, str, dict | None]:
+    if not wo:
+        return False, "Work order not found."
+
+    if wo.planner_id != requesting_planner_id:
+        return False, "You can only complete your own work orders."
+
+    if wo.status != WorkOrderStatus.IN_PROGRESS:
+        return False, f"Only IN_PROGRESS orders can be completed. This order is {wo.status.value}."
+
+    wo.status   = WorkOrderStatus.COMPLETED
+    wo.version += 1
+    db.session.commit()
+
+    return True, f"WO-{wo.id:04d} has been marked COMPLETED."
+
+# US-6: Restock (IN movement) — Manager only
+
+def restock_material(
+    material_id: int,
+    qty: float,
+    supplier: str,
+) -> tuple[bool, str]:
     """
-    Adjust stock by a signed delta (+/-) and create an ADJUST movement.
-    Returns (success, message, low_stock_alert_or_None).
-
-    SRS acceptance:
-      - ADJUST movement with reason, qty_delta
-      - qty_delta can be positive (add) or negative (remove)
-      - Final stock must not be negative
+    Add stock to a material (type=IN).
+    Logs supplier name and timestamp.
     """
-    material = db.session.get(Material, material_pk)
+    material = db.session.get(Material, material_id)
     if not material:
-        return False, "Material not found.", None
+        return False, "Material not found."
 
     try:
-        delta = Decimal(str(qty_delta))
-    except InvalidOperation:
-        return False, "Invalid quantity delta.", None
+        qty = float(qty)
+        if qty <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return False, "Quantity must be a positive number."
 
-    if delta == 0:
-        return False, "Adjustment delta cannot be zero.", None
+    material.current_stock = float(material.current_stock) + qty
 
-    reason = reason.strip()
-    if not reason:
-        return False, "Reason is required for adjustments.", None
+    movement = InventoryMovement(
+        material_id=material_id,
+        type=MovementType.IN,
+        qty=qty,
+        supplier=supplier.strip() if supplier else None,
+        timestamp=_now(),
+    )
+    db.session.add(movement)
+    db.session.commit()
 
-    new_stock = Decimal(str(material.current_stock)) + delta
+    return True, f"Restocked {qty} {material.unit.value} of {material.name}. New stock: {material.current_stock}."
+
+
+# US-6: Adjust (ADJUST movement) — Manager only
+
+
+def adjust_stock(
+    material_id: int,
+    qty_delta: float,
+    reason: str,
+) -> tuple[bool, str]:
+    """
+    Manually adjust stock by a signed delta.
+    Positive delta = add, negative delta = remove.
+    SRS Don't: do not allow negative stock values.
+    """
+    material = db.session.get(Material, material_id)
+    if not material:
+        return False, "Material not found."
+
+    if not reason or not reason.strip():
+        return False, "A reason is required for stock adjustment."
+
+    try:
+        delta = float(qty_delta)
+    except (TypeError, ValueError):
+        return False, "Delta must be a number."
+
+    new_stock = float(material.current_stock) + delta
+
     if new_stock < 0:
         return False, (
-            f"Adjustment would result in negative stock ({new_stock} {material.unit.value}). "
-            "Cannot proceed."
-        ), None
+            f"Adjustment would result in negative stock "
+            f"({material.current_stock} + {delta} = {new_stock:.3f}). "
+            "Not allowed."
+        )
 
-    old_stock = float(material.current_stock)
     material.current_stock = new_stock
 
     movement = InventoryMovement(
-        material_id=material.id,
+        material_id=material_id,
         type=MovementType.ADJUST,
         qty=abs(delta),
         qty_delta=delta,
-        reason=reason,
-        timestamp=datetime.now(timezone.utc),
+        reason=reason.strip(),
+        timestamp=_now(),
     )
     db.session.add(movement)
-
-    # US-10: Audit log for adjustment
-    from services.audit_service import log_audit
-    from models.audit import AuditAction
-    log_audit(
-        action=AuditAction.INVENTORY_ADJUST,
-        user_id=user_id,
-        ip_address=ip_address,
-        entity_type="Material",
-        entity_id=material.id,
-        old_values={"current_stock": old_stock},
-        new_values={
-            "current_stock": float(new_stock),
-            "qty_delta": float(delta),
-            "reason": reason,
-            "type": "ADJUST",
-        },
-    )
-
+    _check_and_enqueue_low_stock(material)
     db.session.commit()
 
-    alert = check_low_stock_alert(material)
-    action = "added" if delta > 0 else "removed"
-    return True, (
-        f"Adjusted {material.sku}: {action} {abs(delta)} {material.unit.value}. "
-        f"New stock: {new_stock} {material.unit.value}."
-    ), alert
+    return True, f"Stock adjusted by {delta:+.3f}. New stock: {new_stock:.3f} {material.unit.value}."
+
+# Internal helper
+
+def _check_and_enqueue_low_stock(material: Material):
+    """
+    If current_stock <= reorder_level, create a LOW_STOCK
+    notification row for all MANAGER users.
+    Called inside a transaction — does not commit itself.
+    """
+    if float(material.current_stock) > float(material.reorder_level):
+        return
+
+    from models.notification import Notification, NotificationType, NotificationStatus
+    from models.user import User, UserRole
+
+    managers = User.query.filter_by(role=UserRole.MANAGER).all()
+    for manager in managers:
+        notif = Notification(
+            type=NotificationType.LOW_STOCK,
+            recipient_id=manager.id,
+            status=NotificationStatus.QUEUED,
+            payload={
+                "material_id":   material.id,
+                "sku":           material.sku,
+                "name":          material.name,
+                "current_stock": str(material.current_stock),
+                "reorder_level": str(material.reorder_level),
+                "unit":          material.unit.value,
+            },
+        )
+        db.session.add(notif)
