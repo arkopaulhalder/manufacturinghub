@@ -130,6 +130,13 @@ def _register_cli_commands(app):
         count = run_maintenance_due_check()
         click.echo(f"Maintenance-due check complete: {count} notification(s) enqueued.")
 
+    @notify.command("update-machine-status")
+    def update_machine_status():
+        """US-7: Auto-set machines to MAINTENANCE when due (±2 days grace)."""
+        from services.maintenance_service import update_machines_due_for_maintenance
+        count = update_machines_due_for_maintenance()
+        click.echo(f"Machine status update complete: {count} machine(s) set to MAINTENANCE.")
+
     @notify.command("process-queue")
     @click.option("--batch", default=50, help="Max notifications to process per run.")
     def process_queue(batch):
@@ -143,13 +150,19 @@ def _register_cli_commands(app):
 
     @notify.command("run-all")
     def run_all():
-        """Run all daily checks (low-stock + maintenance-due) then process queue."""
+        """Run all daily checks + machine status update + process queue."""
         from services.notification_service import (
             process_notification_queue, run_low_stock_check, run_maintenance_due_check,
         )
+        from services.maintenance_service import update_machines_due_for_maintenance
+
         ls = run_low_stock_check()
         md = run_maintenance_due_check()
-        click.echo(f"Enqueued: {ls} low-stock + {md} maintenance-due notifications.")
+        ms = update_machines_due_for_maintenance()
+        click.echo(
+            f"Enqueued: {ls} low-stock + {md} maintenance-due notifications. "
+            f"{ms} machine(s) set to MAINTENANCE."
+        )
         stats = process_notification_queue()
         click.echo(
             f"Queue processed: {stats['sent']} sent, "

@@ -131,7 +131,8 @@ def schedule(wo_id):
 @login_required
 @requires_role("PLANNER")
 def unschedule(wo_id):
-    success, message = unschedule_work_order(wo_id, current_user.id)
+    expected_version = request.form.get("version", type=int)
+    success, message = unschedule_work_order(wo_id, current_user.id, expected_version=expected_version)
     flash(message, "success" if success else "danger")
     return redirect(url_for("work_order.detail", wo_id=wo_id))
 
@@ -148,7 +149,8 @@ def start(wo_id):
     Start a SCHEDULED work order — transitions to IN_PROGRESS
     and consumes all BOM materials from inventory.
     """
-    success, message, alerts = start_work_order(wo_id, current_user.id)
+    expected_version = request.form.get("version", type=int)
+    success, message, alerts = start_work_order(wo_id, current_user.id, expected_version=expected_version)
 
     if success:
         flash(message, "success")
@@ -175,6 +177,7 @@ def start(wo_id):
 @requires_role("PLANNER")
 def complete(wo_id):
     """Mark an IN_PROGRESS work order as COMPLETED."""
-    success, message = complete_work_order(wo_id, current_user.id)
+    expected_version = request.form.get("version", type=int)
+    success, message = complete_work_order(wo_id, current_user.id, expected_version=expected_version)
     flash(message, "success" if success else "danger")
     return redirect(url_for("work_order.detail", wo_id=wo_id))

@@ -355,8 +355,8 @@ def process_notification_queue(batch_size: int = 50) -> dict:
             stats["skipped"] += 1
             continue
 
-        success = _send_email_notification(notif)
-        if success:
+        success = _send_email_notification(notif) # only for email else skip for SMS and None
+        if success: 
             notif.status = NotificationStatus.SENT
             notif.sent_at = datetime.now(timezone.utc)
             stats["sent"] += 1
