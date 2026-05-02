@@ -1,0 +1,50 @@
+# ==========================================================================
+# ManufacturingHub — Crontab Configuration (Linux / macOS)
+# ==========================================================================
+#
+# SETUP:
+#   1. Copy this file:       cp cron/crontab.example cron/crontab
+#   2. Edit paths below to match your deployment
+#   3. Install the crontab:  crontab cron/crontab
+#   4. Verify:               crontab -l
+#
+# ENVIRONMENT VARIABLES (set these to match your deployment)
+FLASK_APP=run.py
+FLASK_ENV=production
+APP_DIR=/path/to/manufacturinghub
+VENV_DIR=/path/to/manufacturinghub/venv
+LOG_DIR=/path/to/manufacturinghub/logs
+
+# ==========================================================================
+# US-6: Inventory — Low Stock Alert
+# Scans materials where current_stock ≤ reorder_level and notifies managers.
+# Runs every day at 6:00 AM and 6:00 PM (twice daily).
+# ==========================================================================
+0 6,18 * * * cd $APP_DIR && $VENV_DIR/bin/flask notify low-stock >> $LOG_DIR/low_stock.log 2>&1
+
+# ==========================================================================
+# US-7: Maintenance — Due Date Alerts
+# Scans rules where next_due_date is within 3 days and notifies managers.
+# Runs every day at 6:00 AM.
+# ==========================================================================
+0 6 * * * cd $APP_DIR && $VENV_DIR/bin/flask notify maintenance-due >> $LOG_DIR/maintenance_due.log 2>&1
+
+# ==========================================================================
+# US-7: Maintenance — Auto-update Machine Status
+# Sets machines to MAINTENANCE status when next_due_date is within ±2 days.
+# Runs every day at 6:15 AM (after maintenance-due check).
+# ==========================================================================
+15 6 * * * cd $APP_DIR && $VENV_DIR/bin/flask notify update-machine-status >> $LOG_DIR/machine_status.log 2>&1
+
+# ==========================================================================
+# US-8: Process Notification Queue
+# Sends queued email notifications (with retry for failures).
+# Runs every 15 minutes throughout the day.
+# ==========================================================================
+*/15 * * * * cd $APP_DIR && $VENV_DIR/bin/flask notify process-queue >> $LOG_DIR/process_queue.log 2>&1
+
+# ==========================================================================
+# ALTERNATIVE: Single "run-all" command
+# If you prefer a single daily job that does everything:
+#   0 6 * * * cd $APP_DIR && $VENV_DIR/bin/flask notify run-all >> $LOG_DIR/daily_cron.log 2>&1
+# ==========================================================================

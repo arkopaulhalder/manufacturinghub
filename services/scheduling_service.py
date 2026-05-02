@@ -242,6 +242,7 @@ def schedule_work_order(
 def unschedule_work_order(
     wo_id: int,
     requesting_planner_id: int,
+    expected_version: int | None = None,
 ) -> tuple[bool, str]:
     """
     Remove machine assignment and revert order to PENDING.
@@ -251,6 +252,9 @@ def unschedule_work_order(
 
     if not wo:
         return False, "Work order not found."
+
+    if expected_version is not None and wo.version != expected_version:
+        return False, "This work order was modified by another user. Please refresh the page and try again."
 
     if wo.planner_id != requesting_planner_id:
         return False, "You can only unschedule your own work orders."
@@ -276,6 +280,7 @@ def unschedule_work_order(
 def start_work_order(
     wo_id: int,
     requesting_planner_id: int,
+    expected_version: int | None = None,
 ) -> tuple[bool, str, list[dict]]:
     """
     Transition work order SCHEDULED → IN_PROGRESS.
@@ -294,6 +299,9 @@ def start_work_order(
 
     if not wo:
         return False, "Work order not found.", []
+
+    if expected_version is not None and wo.version != expected_version:
+        return False, "This work order was modified by another user. Please refresh the page and try again.", []
 
     if wo.planner_id != requesting_planner_id:
         return False, "You can only start your own work orders.", []
@@ -322,6 +330,7 @@ def start_work_order(
 def complete_work_order(
     wo_id: int,
     requesting_planner_id: int,
+    expected_version: int | None = None,
 ) -> tuple[bool, str]:
     """
     Transition work order IN_PROGRESS → COMPLETED.
@@ -334,6 +343,9 @@ def complete_work_order(
 
     if not wo:
         return False, "Work order not found."
+
+    if expected_version is not None and wo.version != expected_version:
+        return False, "This work order was modified by another user. Please refresh the page and try again."
 
     if wo.planner_id != requesting_planner_id:
         return False, "You can only complete your own work orders."

@@ -1,0 +1,2 @@
+schtasks /delete /tn "ManufacturingHub_DailyCron" /f
+

@@ -3,4 +3,6 @@
 .projectenv/
 __pycache__/
 .vscode/
+logs/
+logs/daily_cron.log
 *.pyc
