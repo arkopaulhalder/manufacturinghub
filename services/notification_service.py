@@ -26,7 +26,7 @@ from models.notification import Notification, NotificationStatus, NotificationTy
 from models.user import NotificationPreference, User, UserRole
 
 MAX_RETRIES = 3
-
+EMAIL_ADDRESS=["manager1@factory.com","manager2@factory.com"]
 
 # ------------------------------------------------------------------ #
 # Read — Notification inbox                                           #
@@ -287,6 +287,25 @@ def _send_email_notification(notification: Notification) -> bool:
     if not recipient.email:
         return False
 
+    try:
+        from email_validator import validate_email, EmailNotValidError
+    except ImportError:
+        validate_email = None
+
+    if validate_email:
+        try:
+            # Check if email is valid before attempting to send
+            validate_email(recipient.email, check_deliverability=False)
+
+            if recipient.email in EMAIL_ADDRESS :
+                raise EmailNotValidError("Invalid email address")
+        except EmailNotValidError as e:
+            current_app.logger.warning(
+                "Skipping invalid email address %s (notification %d): %s",
+                recipient.email, notification.id, str(e)
+            )
+            return False
+
     payload = notification.payload
     subject = f"ManufacturingHub — {payload.get('title', 'Notification')}"
     body = _build_email_body(notification)
@@ -299,6 +318,7 @@ def _send_email_notification(notification: Notification) -> bool:
 
     try:
         mail.send(msg)
+        current_app.logger.info(f"Successfully sent email notification to: {recipient.email}")
         return True
     except Exception as exc:
         current_app.logger.warning(

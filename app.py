@@ -103,9 +103,131 @@ def create_app(config_object=None):
         return redirect(url_for("auth.login"))
 
     # ---- US-8: CLI commands for cron jobs --------------------------------
-    _register_cli_commands(app)
+    # _register_cli_commands(app)
+
+    # ---- US-8 (alternate): In-process APScheduler -------------------------
+    # Starts background jobs automatically when the app runs via
+    # `python run.py`. No Windows Task Scheduler or crontab needed.
+
+    _start_apscheduler(app)
 
     return app
+
+
+# ------------------------------------------------------------------ #
+# APScheduler — in-process background job scheduler                    #
+# ------------------------------------------------------------------ #
+
+def _start_apscheduler(app):
+    """
+    Start APScheduler within the Flask app process.
+
+    This is an alternate approach to the CLI + crontab/Windows Task Scheduler
+    method. It runs the same notification and maintenance jobs automatically
+    in the background while the Flask dev server is running.
+
+    Schedule (configurable via app.config):
+      - Low-stock check:          every 6 hours   (US-6 / US-8)
+      - Maintenance-due check:    every 6 hours   (US-7 / US-8)
+      - Machine status update:    every 6 hours   (US-7)
+      - Process notification queue: every 15 minutes (US-8)
+    """
+    # In debug mode, Flask spawns TWO processes: a parent (reloader) and
+    # a child (the actual app). Without this guard, APScheduler would start
+    # in BOTH, causing every job to run twice.
+    # Fix: only start the scheduler in the child process (WERKZEUG_RUN_MAIN=true).
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return
+
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.interval import IntervalTrigger
+    except ImportError:
+        app.logger.warning(
+            "APScheduler not installed. Background jobs disabled. "
+            "Install with: pip install APScheduler"
+        )
+        return
+
+    scheduler = BackgroundScheduler(daemon=True)
+
+    # Wrap each job so it runs inside the Flask app context
+    def _job_low_stock():
+        with app.app_context():
+            from services.notification_service import run_low_stock_check
+            count = run_low_stock_check()
+            if count:
+                app.logger.info(f"[APScheduler] Low-stock check: {count} notification(s) enqueued.")
+
+    def _job_maintenance_due():
+        with app.app_context():
+            from services.notification_service import run_maintenance_due_check
+            count = run_maintenance_due_check()
+            if count:
+                app.logger.info(f"[APScheduler] Maintenance-due check: {count} notification(s) enqueued.")
+
+    def _job_update_machine_status():
+        with app.app_context():
+            from services.maintenance_service import update_machines_due_for_maintenance
+            count = update_machines_due_for_maintenance()
+            if count:
+                app.logger.info(f"[APScheduler] Machine status update: {count} machine(s) set to MAINTENANCE.")
+
+    def _job_process_queue():
+        with app.app_context():
+            from services.notification_service import process_notification_queue
+            stats = process_notification_queue(batch_size=50)
+            sent = stats.get("sent", 0)
+            if sent:
+                app.logger.info(
+                    f"[APScheduler] Queue processed: {sent} sent, "
+                    f"{stats['failed']} failed, {stats['skipped']} skipped."
+                )
+
+    # Read intervals from config (with sensible defaults)
+    check_hours = app.config.get("SCHEDULER_CHECK_HOURS", 1)#for testing use 1 minute instead of 6 hours
+    queue_minutes = app.config.get("SCHEDULER_QUEUE_MINUTES", 1)
+
+    scheduler.add_job(
+        _job_low_stock,
+        trigger=IntervalTrigger(minutes=check_hours),
+        id="low_stock_check",
+        name="US-6/US-8: Low stock alert scan",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _job_maintenance_due,
+        trigger=IntervalTrigger(minutes=check_hours),
+        id="maintenance_due_check",
+        name="US-7/US-8: Maintenance due alert scan",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _job_update_machine_status,
+        trigger=IntervalTrigger(minutes=check_hours),
+        id="update_machine_status",
+        name="US-7: Auto-set machines to MAINTENANCE",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _job_process_queue,
+        trigger=IntervalTrigger(minutes=queue_minutes),
+        id="process_notification_queue",
+        name="US-8: Send queued notifications",
+        replace_existing=True,
+    )
+
+    scheduler.start()
+    app.logger.info(
+        f"[APScheduler] Started — checks every {check_hours}h, "
+        f"queue processing every {queue_minutes}min."
+    )
+
+    app.logger.info("***************[APScheduler] Scheduler ended************")
+
+    # Shut down gracefully when the app stops
+    import atexit
+    atexit.register(lambda: scheduler.shutdown(wait=False))
 
 
 def _register_cli_commands(app):
